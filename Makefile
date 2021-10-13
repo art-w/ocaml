@@ -585,6 +585,15 @@ tests:
 clean::
 	$(MAKE) -C testsuite clean
 
+# Run all benchmarks from scratch
+
+.PHONY: bench
+bench:
+	$(eval BENCHMARK_FILE=$(shell mktemp --tmpdir=testsuite/tests/benchmarks bench.XXX.tsv))
+	$(eval export BENCHMARK_FILE=$(shell realpath $(BENCHMARK_FILE)))
+	@$(shell ./bench.sh "$(BENCHMARK_FILE)" 1>&2)
+	@$(MAKE) -C testsuite --no-print-directory benchmarks
+
 # Build the manual latex files from the etex source files
 # (see manual/README.md)
 .PHONY: manual-pregen
@@ -1028,7 +1037,7 @@ bytecomp/opcodes.ml: runtime/caml/instruct.h tools/make_opcodes
 	runtime/ocamlrun tools/make_opcodes -opcodes < $< > $@
 
 bytecomp/opcodes.mli: bytecomp/opcodes.ml
-	$(CAMLC) -i $< > $@
+	OCAMLPARAM=",_,timings=0" $(CAMLC) -i $< > $@
 
 tools/make_opcodes: tools/make_opcodes.mll
 	$(MAKE) -C tools make_opcodes

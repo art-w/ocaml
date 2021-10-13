@@ -19,7 +19,14 @@ LIBNAME=raw_spacetime_lib
 COBJS=spacetime_offline.$(O)
 CAMLOBJS=raw_spacetime_lib.cmo
 
+
 include ../Makefile.otherlibs.common
+
+# Some special targets ('*clean' and 'configure') do not require configuration.
+# REQUIRES_CONFIGURATION is empty if only those targets are requested,
+# and non-empty if configuration is required.
+REQUIRES_CONFIGURATION := $(strip \
+  $(filter-out bench $(CLEAN_TARGET_NAMES) configure, $(MAKECMDGOALS)))
 
 .PHONY: depend
 depend:
