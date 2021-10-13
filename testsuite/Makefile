@@ -146,6 +146,7 @@ default:
 	@echo "  tools           build test tools"
 	@echo "  clean           delete generated files"
 	@echo "  report          print the report for the last execution"
+	@echo "  benchmarks      launch all the benchmarks and report the measurements"
 	@echo
 	@echo "all*, parallel* and list can automatically re-run failed test"
 	@echo "directories if MAX_TESTSUITE_DIR_RETRIES permits"
@@ -264,6 +265,18 @@ one: lib tools
    fi
 	@$(MAKE) check-failstamp
 	@$(MAKE) TESTLOG=$(TESTLOG).one report
+
+.PHONY: benchmarks
+benchmarks: lib tools
+	@-for i in $(shell seq 1 5); do \
+	    for dir in tests/benchmarks/*; do \
+	      if [ -d $$dir ]; then \
+		$(MAKE) exec-one DIR=$$dir; \
+		LC_NUMERIC=POSIX $(AWK) -f ./tests/benchmarks/to_json.awk < "$(BENCHMARK_FILE)"; \
+		rm '$(BENCHMARK_FILE)'; \
+	      fi; \
+	    done; \
+	  done
 
 .PHONY: exec-one
 exec-one:
