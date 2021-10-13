@@ -146,6 +146,7 @@ default:
 	@echo "  tools           build test tools"
 	@echo "  clean           delete generated files"
 	@echo "  report          print the report for the last execution"
+	@echo "  bench           launch all the benchmarks and report the measurements"
 	@echo
 	@echo "all*, parallel* and list can automatically re-run failed test"
 	@echo "directories if MAX_TESTSUITE_DIR_RETRIES permits"
@@ -264,6 +265,14 @@ one: lib tools
    fi
 	@$(MAKE) check-failstamp
 	@$(MAKE) TESTLOG=$(TESTLOG).one report
+
+.PHONY: bench
+bench: lib tools
+	$(eval BENCHMARK_FILE=$(shell mktemp --tmpdir=tests/benchmarks bench.XXX.tsv))
+	$(eval export BENCHMARK_FILE=$(shell realpath $(BENCHMARK_FILE)))
+	@-$(MAKE) all-benchmarks 1>&2
+	@-$(AWK) -f ./tests/benchmarks/to_json.awk < "$(BENCHMARK_FILE)"
+	@rm '$(BENCHMARK_FILE)'
 
 .PHONY: exec-one
 exec-one:

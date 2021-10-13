@@ -619,6 +619,14 @@ tests:
 clean::
 	$(MAKE) -C testsuite clean
 
+# Run all benchmarks from scratch
+
+.PHONY: bench
+bench:
+	@./configure 1>&2
+	@$(MAKE) 1>&2
+	@$(MAKE) -C testsuite --no-print-directory bench
+
 # Build the manual latex files from the etex source files
 # (see manual/README.md)
 .PHONY: manual-pregen
