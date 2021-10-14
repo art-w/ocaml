@@ -117,8 +117,7 @@ Line 1, characters 0-37:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          ('a, 'a) foo
-       Their parameters differ
-       The type 'a is not equal to the type 'b
+       Their constraints differ.
 |}]
 
 (* Check that signatures can hide exstensibility *)
@@ -237,7 +236,7 @@ Error: Signature mismatch:
          type foo = M.foo = private ..
        is not included in
          type foo = ..
-       A private extensible variant would be revealed.
+       A private type would be revealed.
 |}]
 
 

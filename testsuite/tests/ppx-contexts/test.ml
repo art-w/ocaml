@@ -1,5 +1,5 @@
 (* TEST
-readonly_files = "myppx.ml"
+files = "myppx.ml"
 include ocamlcommon
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte

@@ -143,7 +143,7 @@ let type_exception sub {tyexn_constructor; _} =
 
 let extension_constructor sub {ext_kind; _} =
   match ext_kind with
-  | Text_decl (_, ctl, cto) ->
+  | Text_decl (ctl, cto) ->
       constructor_args sub ctl;
       Option.iter (sub.typ sub) cto
   | Text_rebind _ -> ()
@@ -234,8 +234,9 @@ let expr sub {exp_extra; exp_desc; exp_env; _} =
       sub.expr sub exp1;
       sub.expr sub exp2;
       sub.expr sub exp3
-  | Texp_send (exp, _) ->
-      sub.expr sub exp
+  | Texp_send (exp, _, expo) ->
+      sub.expr sub exp;
+      Option.iter (sub.expr sub) expo
   | Texp_new _ -> ()
   | Texp_instvar _ -> ()
   | Texp_setinstvar (_, _, _, exp) ->sub.expr sub exp

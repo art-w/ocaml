@@ -1,9 +1,12 @@
-ROOTDIR = ../..
--include $(ROOTDIR)/Makefile.build_config
+SRC = $(abspath ../..)
 
-TEXQUOTE = $(ROOTDIR)/runtime/ocamlrun ../tools/texquote2
+export LD_LIBRARY_PATH   ?= "$(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/"
+export DYLD_LIBRARY_PATH ?= "$(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/"
+SET_LD_PATH = CAML_LD_LIBRARY_PATH=$(LD_LIBRARY_PATH)
 
-FILES = allfiles.tex biblio.tex foreword.tex version.tex cmds/warnings-help.etex ifocamldoc.tex
+TEXQUOTE = $(SRC)/runtime/ocamlrun ../tools/texquote2
+
+FILES = allfiles.tex biblio.tex foreword.tex version.tex warnings-help.etex
 
 TEXINPUTS = ".:..:../refman:../refman/extensions:../library:../cmds:../tutorials:../../styles:"
 RELEASE = $$HOME/release/$${RELEASENAME}
@@ -15,29 +18,19 @@ INFO_FLAGS = -fix -exec xxdate.exe -info -w 79 -s
 HTML_FLAGS = -fix -exec xxdate.exe -O
 TEXT_FLAGS = -fix -exec xxdate.exe -text -w 79 -s
 
-# Copy the documentation files from ROOTDIR/api_docgen
-APIDOC=$(ROOTDIR)/api_docgen
+# Copy the documentation files from SRC/doc
 .PHONY: html_files
 .PHONY: latex_files
-ifeq ($(DOCUMENTATION_TOOL),odoc)
 latex_files:
-	make -C $(APIDOC) latex
-	cp $(APIDOC)/build/latex/*/*.tex library
+	$(MAKE) -C $(SRC)/api_docgen latex
+	cp $(SRC)/api_docgen/latex/*.tex library
 html_files:
-	make -C $(APIDOC) html
-	cp -r $(APIDOC)/build/html/*  htmlman
-else
-latex_files:
-	$(MAKE) -C $(APIDOC) latex
-	cp $(APIDOC)/build/latex/*.tex library
-html_files:
-	$(MAKE) -C $(APIDOC) html
+	$(MAKE) -C $(SRC)/api_docgen html
 	mkdir -p htmlman/libref
-	cp -r $(APIDOC)/build/html/libref htmlman
-	cp -r $(APIDOC)/build/html/compilerlibref htmlman
+	cp -r $(SRC)/api_docgen/html/libref $(SRC)/api_docgen/html/compilerlibref htmlman
 	cp style.css htmlman/libref
 	cp style.css htmlman/compilerlibref
-endif
+
 
 manual: files latex_files
 	cd texstuff \
@@ -83,9 +76,7 @@ text: files latex_files
 
 
 all:
-	$(MAKE) html
-	$(MAKE) text
-	$(MAKE) info
+	$(MAKE) html text info manual
 	$(MAKE) manual
 	$(MAKE) index
 	$(MAKE) manual
@@ -122,17 +113,19 @@ etex-files: $(FILES)
 	$(TEXQUOTE) < $< > $*.texquote_error.tex
 	mv $*.texquote_error.tex $@
 
-cmds/warnings-help.etex: $(ROOTDIR)/utils/warnings.ml $(ROOTDIR)/ocamlc
+version.tex: $(SRC)/VERSION
+	sed -n -e '1s/^\([0-9]*\.[0-9]*\).*$$/\\def\\ocamlversion{\1}/p' $< > $@
+
+warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
 	(echo "% This file is generated from (ocamlc -warn-help)";\
 	 echo "% according to a rule in manual/src/Makefile.";\
 	 echo "% In particular, the reference to documentation sections";\
 	 echo "% are inserted through the Makefile, which should be updated";\
 	 echo "% when a new warning is documented.";\
 	 echo "%";\
-	 $(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/ocamlc -warn-help \
-	 | LC_ALL=C sed -e 's/^ *\([0-9][0-9]*\) *\[\([a-z][a-z-]*\)\]\(.*\)/\\item[\1 "\2"] \3/' \
-	                -e 's/^ *\([0-9A-Z][0-9]*\) *\([^]].*\)/\\item[\1] \2/'\
-	 | sed -e 's/@/\\@/g' \
+	 $(SET_LD_PATH) $(SRC)/boot/ocamlrun $(SRC)/ocamlc -warn-help \
+	 | sed -e 's/^ *\([0-9][0-9]*\) *\[\([a-z][a-z-]*\)\]\(.*\)/\\item[\1 "\2"] \3/' \
+               -e 's/^ *\([0-9A-Z][0-9]*\) *\([^]].*\)/\\item[\1] \2/'\
 	) >$@
 #	sed --inplace is not portable, emulate
 	for i in 52 57; do\
@@ -142,25 +135,17 @@ cmds/warnings-help.etex: $(ROOTDIR)/utils/warnings.ml $(ROOTDIR)/ocamlc
 	  mv $@.tmp $@;\
 	done
 
-ifocamldoc.tex: $(ROOTDIR)/Makefile.build_config
-	$(MAKE) -C $(APIDOC) build/latex/ifocamldoc.tex
-	cp $(APIDOC)/build/latex/ifocamldoc.tex $@
 
 .PHONY: clean
 clean:
-	rm -f $(filter-out version.tex,$(FILES)) *.texquote_error
+	rm -f $(FILES) *.texquote_error
 	$(MAKE) -C cmds      clean
 	$(MAKE) -C library   clean
 	$(MAKE) -C refman    clean
 	$(MAKE) -C tutorials clean
 	$(MAKE) -C html_processing clean
 	-rm -f texstuff/*
-	cd htmlman; rm -rf libref compilerlibref *.htoc *.html *.haux *.hind *.svg \
-	                   manual.hmanual manual.hmanual.kwd manual.css
-	cd textman; rm -f manual.txt *.haux *.hind *.htoc
-	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind *.info*.gz
-
-.PHONY: distclean
-distclean: clean
-	rm -f version.tex
-	$(MAKE) -C html_processing distclean
+	cd htmlman; rm -rf libref compilerlibref index.html \
+	manual*.html *.haux *.hind *.svg
+	cd textman; rm -f manual.txt *.haux *.hind
+	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind

@@ -1,5 +1,5 @@
 (* TEST
-   flags = "-w +A-70"
+   flags = "-w A"
    * expect
 *)
 

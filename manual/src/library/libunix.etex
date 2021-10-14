@@ -10,8 +10,8 @@ details on the behavior of these functions.
 
 \ifouthtml
 \begin{linklist}
-\libdocitem{Unix}{Unix system calls}
-\libdocitem{UnixLabels}{Labeled Unix system calls}
+\stddocitem{Unix}{Unix system calls}
+\stddocitem{UnixLabels}{Labeled Unix system calls}
 \end{linklist}
 \fi
 
@@ -39,7 +39,7 @@ more information on the functions that are not supported under Windows.
 \end{windows}
 
 \begin{linklist}
-\libdocitem{Unix}{Unix system calls}
+\stddocitem{Unix}{Unix system calls}
 \end{linklist}
 
 \section{UnixLabels}{Module \texttt{UnixLabels}: labelized version of the interface}
@@ -90,7 +90,7 @@ processes}
 \entree{"getpwnam", "getpwuid"}{always raise "Not_found"}
 \entree{"getgrnam", "getgrgid"}{always raise "Not_found"}
 \entree{type "socket_domain"}{"PF_INET" is fully supported;
-"PF_INET6" is fully supported (since 4.01.0); "PF_UNIX" is supported since 4.14.0, but only works on Windows 10 1803 and later.}
+"PF_INET6" is fully supported (since 4.01.0); "PF_UNIX" is not supported }
 \entree{"establish_server"}{not implemented; use threads}
 \entree{terminal functions ("tc*")}{not implemented}
 \entree{"setsid"}{not implemented}

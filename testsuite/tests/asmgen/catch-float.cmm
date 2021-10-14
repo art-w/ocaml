@@ -1,5 +1,5 @@
 (* TEST
-readonly_files = "main.c"
+files = "main.c"
 arguments = "-DFLOAT_CATCH -DFUN=catch_float main.c"
 * asmgen
 *)

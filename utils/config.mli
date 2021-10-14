@@ -211,9 +211,6 @@ val flambda : bool
 val with_flambda_invariants : bool
 (** Whether the invariants checks for flambda are enabled *)
 
-val with_cmm_invariants : bool
-(** Whether the invariants checks for Cmm are enabled *)
-
 val profinfo : bool
 (** Whether the compiler was configured for profiling *)
 
@@ -243,11 +240,6 @@ val function_sections : bool
 
 val windows_unicode: bool
 (** Whether Windows Unicode runtime is enabled *)
-
-val naked_pointers : bool
-(** Whether the runtime supports naked pointers
-
-    @since 4.14.0 *)
 
 val supports_shared_libraries: bool
 (** Whether shared libraries are supported

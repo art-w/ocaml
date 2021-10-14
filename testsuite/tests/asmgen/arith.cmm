@@ -1,5 +1,5 @@
 (* TEST
-readonly_files = "mainarith.c"
+files = "mainarith.c"
 arguments = "mainarith.c"
 * asmgen
 *)

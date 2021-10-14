@@ -15,16 +15,11 @@
 
 .NOTPARALLEL:
 
-ROOTDIR = ../..
+TOPDIR = ../..
 COMPFLAGS ?=
 RUNTIME_VARIANT ?=
 
-include $(ROOTDIR)/Makefile.common
-include $(ROOTDIR)/Makefile.best_binaries
-
-STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLC ?= $(BEST_OCAMLC) $(STDLIBFLAGS)
-OCAMLOPT ?= $(BEST_OCAMLOPT) $(STDLIBFLAGS)
+include $(TOPDIR)/Makefile.tools
 
 libraries := testing.cmi testing.cma lib.cmo
 

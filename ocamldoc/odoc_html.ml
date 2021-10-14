@@ -816,17 +816,12 @@ let print_concat b sep f =
   in
   iter
 
-
-(** Escape "\n", "<", ">", and "&" *)
-let text_to_html s =
+let newline_to_indented_br s =
   let len = String.length s in
   let b = Buffer.create len in
   for i = 0 to len - 1 do
     match s.[i] with
-    | '\n' -> Buffer.add_string b "<br>     "
-    | '<' -> Buffer.add_string b "&lt;"
-    | '>' -> Buffer.add_string b "&gt;"
-    | '&' -> Buffer.add_string b "&amp;"
+      '\n' -> Buffer.add_string b "<br>     "
     | c -> Buffer.add_char b c
   done;
   Buffer.contents b
@@ -1312,7 +1307,7 @@ class html =
     (** Print html code to display a [Types.type_expr]. *)
     method html_of_type_expr b m_name t =
       let s = Odoc_info.remove_ending_newline (Odoc_info.string_of_type_expr t) in
-      let s2 = text_to_html s in
+      let s2 = newline_to_indented_br s in
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_idents_links m_name s2);
       bs b "</code>"
@@ -1322,7 +1317,7 @@ class html =
       match l with
       | Cstr_tuple l ->
           let s = Odoc_info.string_of_type_list ?par sep l in
-          let s2 = text_to_html s in
+          let s2 = newline_to_indented_br s in
           bs b "<code class=\"type\">";
           bs b (self#create_fully_qualified_idents_links m_name s2);
           bs b "</code>"
@@ -1336,7 +1331,7 @@ class html =
        of a class of class type. *)
     method html_of_class_type_param_expr_list b m_name l =
       let s = Odoc_info.string_of_class_type_param_list l in
-      let s2 = text_to_html s in
+      let s2 = newline_to_indented_br s in
       bs b "<code class=\"type\">[";
       bs b (self#create_fully_qualified_idents_links m_name s2);
       bs b "]</code>"
@@ -1344,7 +1339,7 @@ class html =
     method html_of_class_parameter_list b father c =
       let s = Odoc_info.string_of_class_params c in
       let s = Odoc_info.remove_ending_newline s in
-      let s2 = text_to_html s in
+      let s2 = newline_to_indented_br s in
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_idents_links father s2);
       bs b "</code>"
@@ -1352,7 +1347,7 @@ class html =
     (** Print html code to display a list of type parameters for the given type.*)
     method html_of_type_expr_param_list b m_name t =
       let s = Odoc_info.string_of_type_param_list t in
-      let s2 = text_to_html s in
+      let s2 = newline_to_indented_br s in
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_idents_links m_name s2);
       bs b "</code>"
@@ -1568,7 +1563,7 @@ class html =
       bs b "<pre><code>";
       bs b ((self#keyword "type")^" ");
       let s = Odoc_info.string_of_type_extension_param_list te in
-      let s2 = text_to_html s in
+      let s2 = newline_to_indented_br s in
       bs b "<code class=\"type\">";
       bs b (self#create_fully_qualified_idents_links m_name s2);
       bs b "</code>";

@@ -51,7 +51,7 @@ type operation =
                   ty_res : Cmm.machtype; ty_args : Cmm.exttype list;
                   alloc : bool; }
   | Istackoffset of int
-  | Iload of Cmm.memory_chunk * Arch.addressing_mode * Asttypes.mutable_flag
+  | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
                                  (* false = initialization, true = assignment *)
   | Ialloc of { bytes : int; dbginfo : Debuginfo.alloc_dbginfo; }
@@ -59,9 +59,15 @@ type operation =
   | Iintop_imm of integer_operation * int
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
-  | Iopaque
   | Ispecific of Arch.specific_operation
-  | Ipoll of { return_label: Cmm.label option }
+  | Iname_for_debugger of { ident : Backend_var.t; which_parameter : int option;
+      provenance : unit option; is_assignment : bool; }
+    (** [Iname_for_debugger] has the following semantics:
+        (a) The argument register(s) is/are deemed to contain the value of the
+            given identifier.
+        (b) If [is_assignment] is [true], any information about other [Reg.t]s
+            that have been previously deemed to hold the value of that
+            identifier is forgotten. *)
 
 type instruction =
   { desc: instruction_desc;
@@ -69,7 +75,9 @@ type instruction =
     arg: Reg.t array;
     res: Reg.t array;
     dbg: Debuginfo.t;
-    mutable live: Reg.Set.t
+    mutable live: Reg.Set.t;
+    mutable available_before: Reg_availability_set.t;
+    mutable available_across: Reg_availability_set.t option;
   }
 
 and instruction_desc =
@@ -103,11 +111,4 @@ val instr_cons_debug:
         instruction -> instruction
 val instr_iter: (instruction -> unit) -> instruction -> unit
 
-val operation_is_pure : operation -> bool
-  (** Returns [true] if the given operation only produces a result
-      in its destination registers, but has no side effects whatsoever:
-      it doesn't raise exceptions, it doesn't modify already-allocated
-      blocks, it doesn't adjust the stack frame, etc. *)
-
 val operation_can_raise : operation -> bool
-  (** Returns [true] if the given operation can raise an exception. *)

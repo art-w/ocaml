@@ -29,7 +29,9 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-/* Deprecation warnings */
+/* Basic types and constants */
+
+typedef size_t asize_t;
 
 #if defined(__GNUC__) || defined(__clang__)
   /* Supported since at least GCC 3.1 */
@@ -41,34 +43,6 @@
     typedef __declspec(deprecated) type name
 #else
   #define CAMLdeprecated_typedef(name, type) typedef type name
-#endif
-
-#if defined(__GNUC__) && __STDC_VERSION__ >= 199901L || _MSC_VER >= 1925
-
-#define CAML_STRINGIFY(x) #x
-#ifdef _MSC_VER
-#define CAML_MAKEWARNING1(x) CAML_STRINGIFY(message(x))
-#else
-#define CAML_MAKEWARNING1(x) CAML_STRINGIFY(GCC warning x)
-#endif
-#define CAML_MAKEWARNING2(y) CAML_MAKEWARNING1(#y)
-#define CAML_PREPROWARNING(x) _Pragma(CAML_MAKEWARNING2(x))
-#define CAML_DEPRECATED(name1,name2) \
-  CAML_PREPROWARNING(name1 is deprecated: use name2 instead)
-
-#else
-
-#define CAML_PREPROWARNING(msg)
-#define CAML_DEPRECATED(name1,name2)
-
-#endif
-
-/* Basic types and constants */
-
-typedef size_t asize_t;
-
-#ifndef NULL
-#define NULL 0
 #endif
 
 #ifdef CAML_INTERNALS
@@ -100,20 +74,11 @@ CAMLdeprecated_typedef(addr, char *);
   #define Noreturn
 #endif
 
-/* Manually preventing inlining */
-#if defined(__GNUC__)
-  #define Caml_noinline __attribute__ ((noinline))
-#elif defined(_MSC_VER)
-  #define Caml_noinline __declspec(noinline)
-#else
-  #define Caml_noinline
-#endif
-
 /* Export control (to mark primitives and to handle Windows DLL) */
 
 #ifndef CAMLDLLIMPORT
   #if defined(SUPPORT_DYNAMIC_LINKING) && defined(ARCH_SIXTYFOUR) \
-      && (defined(__CYGWIN__) || defined(__MINGW32__))
+      && defined(__CYGWIN__)
     #define CAMLDLLIMPORT __declspec(dllimport)
   #else
     #define CAMLDLLIMPORT
@@ -304,8 +269,6 @@ extern double caml_log1p(double);
 
 #ifdef CAML_INTERNALS
 #define T(x) L ## x
-
-#define main_os wmain
 #endif
 
 #define access_os _waccess
@@ -331,8 +294,6 @@ extern double caml_log1p(double);
 #define mktemp_os _wmktemp
 #define fopen_os _wfopen
 
-#define clock_os caml_win32_clock
-
 #define caml_stat_strdup_os caml_stat_wcsdup
 #define caml_stat_strconcat_os caml_stat_wcsconcat
 
@@ -344,8 +305,6 @@ extern double caml_log1p(double);
 
 #ifdef CAML_INTERNALS
 #define T(x) x
-
-#define main_os main
 #endif
 
 #define access_os access
@@ -370,8 +329,6 @@ extern double caml_log1p(double);
 #define strcpy_os strcpy
 #define mktemp_os mktemp
 #define fopen_os fopen
-
-#define clock_os clock
 
 #define caml_stat_strdup_os caml_stat_strdup
 #define caml_stat_strconcat_os caml_stat_strconcat
@@ -404,15 +361,9 @@ CAMLextern int caml_read_directory(char_os * dirname,
                                    struct ext_table * contents);
 
 /* Deprecated aliases */
-#define caml_aligned_malloc \
-   CAML_DEPRECATED("caml_aligned_malloc", "caml_stat_alloc_aligned_noexc") \
-   caml_stat_alloc_aligned_noexc
-#define caml_strdup \
-   CAML_DEPRECATED("caml_strdup", "caml_stat_strdup") \
-   caml_stat_strdup
-#define caml_strconcat \
-   CAML_DEPRECATED("caml_strconcat", "caml_stat_strconcat") \
-   caml_stat_strconcat
+#define caml_aligned_malloc caml_stat_alloc_aligned_noexc
+#define caml_strdup caml_stat_strdup
+#define caml_strconcat caml_stat_strconcat
 
 #ifdef CAML_INTERNALS
 

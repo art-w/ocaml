@@ -785,7 +785,7 @@ and transl_prim_1 env p arg dbg =
   match p with
   (* Generic operations *)
     Popaque ->
-      opaque (transl env arg) dbg
+      transl env arg
   (* Heap operations *)
   | Pfield n ->
       get_field env (transl env arg) n dbg

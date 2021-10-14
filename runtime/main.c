@@ -27,7 +27,11 @@
 #include <windows.h>
 #endif
 
-int main_os(int argc, char_os **argv)
+#ifdef _WIN32
+int wmain(int argc, wchar_t **argv)
+#else
+int main(int argc, char **argv)
+#endif
 {
 #ifdef _WIN32
   /* Expand wildcards and diversions in command line */
@@ -35,6 +39,6 @@ int main_os(int argc, char_os **argv)
 #endif
 
   caml_main(argv);
-  caml_do_exit(0);
+  caml_sys_exit(Val_int(0));
   return 0; /* not reached */
 }

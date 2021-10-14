@@ -21,6 +21,7 @@
 *)
 
 open Types
+open Format
 
 module Signature_names : sig
   type t
@@ -43,7 +44,7 @@ val type_interface:
         Env.t -> Parsetree.signature -> Typedtree.signature
 val transl_signature:
         Env.t -> Parsetree.signature -> Typedtree.signature
-val check_nongen_signature:
+val check_nongen_schemes:
         Env.t -> Types.signature -> unit
         (*
 val type_open_:
@@ -53,7 +54,7 @@ val type_open_:
         *)
 val modtype_of_package:
         Env.t -> Location.t ->
-        Path.t -> (Longident.t * type_expr) list -> module_type
+        Path.t -> Longident.t list -> type_expr list -> module_type
 
 val path_of_module : Typedtree.module_expr -> Path.t option
 
@@ -103,18 +104,19 @@ type hiding_error =
 
 type error =
     Cannot_apply of module_type
-  | Not_included of Includemod.explanation
+  | Not_included of Includemod.error list
   | Cannot_eliminate_dependency of module_type
   | Signature_expected
   | Structure_expected of module_type
   | With_no_component of Longident.t
-  | With_mismatch of Longident.t * Includemod.explanation
+  | With_mismatch of Longident.t * Includemod.error list
   | With_makes_applicative_functor_ill_typed of
-      Longident.t * Path.t * Includemod.explanation
+      Longident.t * Path.t * Includemod.error list
   | With_changes_module_alias of Longident.t * Ident.t * Path.t
   | With_cannot_remove_constrained_type
   | Repeated_name of Sig_component_kind.t * string
   | Non_generalizable of type_expr
+  | Non_generalizable_class of Ident.t * class_declaration
   | Non_generalizable_module of module_type
   | Implementation_is_required of string
   | Interface_not_compiled of string
@@ -135,4 +137,4 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
-val report_error: Env.t -> loc:Location.t -> error -> Location.error
+val report_error: Env.t -> formatter -> error -> unit

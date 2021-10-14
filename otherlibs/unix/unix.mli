@@ -644,11 +644,6 @@ val link : ?follow (* thwart tools/sync_stdlib_docs *) :bool ->
                  unavailable.
    @raise ENOSYS On {e Windows} if [~follow:false] is requested. *)
 
-val realpath : string -> string
-(** [realpath p] is an absolute pathname for [p] obtained by resolving
-    all extra [/] characters, relative path segments and symbolic links.
-
-    @since 4.13.0 *)
 
 (** {1 File permissions and ownership} *)
 
@@ -1403,8 +1398,7 @@ type socket_domain =
 (** The type of socket domains.  Not all platforms support
     IPv6 sockets (type [PF_INET6]).
 
-   On Windows: [PF_UNIX] supported since 4.14.0 on Windows 10 1803
-   and later.  *)
+    On Windows: [PF_UNIX] not implemented.  *)
 
 type socket_type =
     SOCK_STREAM                 (** Stream socket *)

@@ -45,7 +45,6 @@
 # No header for text files (would be too obtrusive).
 *.md                     typo.missing-header
 README*                  typo.missing-header
-VERSION                  typo.missing-header
 *.adoc                   typo.missing-header
 api_docgen/*.mld                typo.missing-header
 api_docgen/alldoc.tex           typo.missing-header
@@ -73,7 +72,7 @@ tools/mantis2gh_stripped.csv typo.missing-header
 /.depend.menhir          typo.prune
 
 # Makefiles may contain tabs
-Makefile*                typo.makefile-whitespace=may
+Makefile*                typo.tab=may
 
 asmcomp/*/emit.mlp       typo.tab=may typo.long-line=may
 
@@ -102,9 +101,6 @@ otherlibs/win32unix/readlink.c    typo.long-line
 otherlibs/win32unix/stat.c        typo.long-line
 otherlibs/win32unix/symlink.c     typo.long-line
 
-runtime/sak.c            typo.non-ascii
-runtime/caml/compatibility.h    typo.very-long-line
-
 stdlib/hashbang     typo.white-at-eol typo.missing-lf
 
 testsuite/tests/**                                      typo.missing-header typo.long-line=may
@@ -118,7 +114,6 @@ testsuite/tests/generated-parse-errors/errors.*         typo.very-long-line
 testsuite/tools/*.S                                     typo.missing-header
 testsuite/tools/*.asm                                   typo.missing-header
 testsuite/typing                                        typo.missing-header
-testsuite/tests/messages/highlight_tabs.ml              typo.tab
 
 # prune testsuite reference files
 testsuite/tests/**/*.reference               typo.prune
@@ -156,7 +151,6 @@ menhir-bench.bash typo.missing-header typo.utf8
 
 /tools/ci/appveyor/appveyor_build.cmd text eol=crlf
 
-aclocal.m4 typo.tab
 configure.ac text eol=lf
 build-aux/compile text eol=lf
 build-aux/config.guess text eol=lf

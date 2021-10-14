@@ -2,7 +2,7 @@
 
 include dynlink
 
-readonly_files = "test10_plugin.ml"
+files = "test10_plugin.ml"
 flags += "-g"
 
 libraries = ""

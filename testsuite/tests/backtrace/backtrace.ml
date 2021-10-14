@@ -1,7 +1,7 @@
-(* TEST_BELOW *)
-
-
-
+(* TEST
+   flags = "-g"
+   ocamlrunparam += ",b=1"
+*)
 
 (* A test for stack backtraces *)
 
@@ -19,8 +19,3 @@ let g msg =
 
 let _ =
   ignore (g Sys.argv.(1))
-
-(* TEST
-   flags = "-g"
-   ocamlrunparam += ",b=1"
-*)

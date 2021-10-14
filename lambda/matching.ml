@@ -1797,6 +1797,7 @@ let get_expr_args_variant_nonconst ~scopes head (arg, _mut) rem =
   (Lprim (Pfield 1, [ arg ], loc), Alias) :: rem
 
 let divide_variant ~scopes row ctx { cases = cl; args; default = def } =
+  let row = Btype.row_repr row in
   let rec divide = function
     | [] -> { args; cells = [] }
     | ((p, patl), action) :: rem
@@ -1807,7 +1808,10 @@ let divide_variant ~scopes row ctx { cases = cl; args; default = def } =
         in
         let head = Simple.head p in
         let variants = divide rem in
-        if row_field lab row = Rabsent then
+        if
+          try Btype.row_field_repr (List.assoc lab row.row_fields) = Rabsent
+          with Not_found -> true
+        then
           variants
         else
           let tag = Btype.hash_variant lab in
@@ -2329,10 +2333,9 @@ module SArg = struct
 
   let gtint = Pintcomp Cgt
 
-  type loc = Lambda.scoped_location
-  type arg = Lambda.lambda
-  type test = Lambda.lambda
   type act = Lambda.lambda
+
+  type loc = Lambda.scoped_location
 
   let make_prim p args = Lprim (p, args, Loc_unknown)
 
@@ -2356,8 +2359,6 @@ module SArg = struct
   let make_isout h arg = Lprim (Pisout, [ h; arg ], Loc_unknown)
 
   let make_isin h arg = Lprim (Pnot, [ make_isout h arg ], Loc_unknown)
-
-  let make_is_nonzero arg = arg
 
   let make_if cond ifso ifnot = Lifthenelse (cond, ifso, ifnot)
 
@@ -2588,13 +2589,13 @@ let rec list_as_pat = function
 
 let complete_pats_constrs = function
   | constr :: _ as constrs ->
-      let constr_of_pat cstr_pat =
-        cstr_pat.pat_desc in
+      let tag_of_constr constr =
+        constr.pat_desc.cstr_tag in
       let pat_of_constr cstr =
         let open Patterns.Head in
         to_omega_pattern { constr with pat_desc = Construct cstr } in
       List.map pat_of_constr
-        (complete_constrs constr (List.map constr_of_pat constrs))
+        (complete_constrs constr (List.map tag_of_constr constrs))
   | _ -> assert false
 
 (*
@@ -2889,16 +2890,17 @@ let call_switcher_variant_constr loc fail arg int_lambda_list =
 
 let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)
     =
+  let row = Btype.row_repr row in
   let num_constr = ref 0 in
-  if row_closed row then
+  if row.row_closed then
     List.iter
       (fun (_, f) ->
-        match row_field_repr f with
+        match Btype.row_field_repr f with
         | Rabsent
         | Reither (true, _ :: _, _, _) ->
             ()
         | _ -> incr num_constr)
-      (row_fields row)
+      row.row_fields
   else
     num_constr := max_int;
   let test_int_or_block arg if_int if_block =

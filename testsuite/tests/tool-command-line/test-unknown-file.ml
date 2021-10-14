@@ -1,6 +1,6 @@
 (* TEST
 
-readonly_files = "unknown-file"
+files = "unknown-file"
 
 * setup-ocamlc.byte-build-env
 compiler_output = "compiler-output.raw"

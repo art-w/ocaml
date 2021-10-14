@@ -23,8 +23,8 @@ WIN_FILES = accept.c bind.c channels.c close.c \
   getpeername.c getpid.c getsockname.c gettimeofday.c isatty.c \
   link.c listen.c lockf.c lseek.c nonblock.c \
   mmap.c open.c pipe.c read.c readlink.c rename.c \
-  realpath.c select.c sendrecv.c \
-  shutdown.c sleep.c socket.c socketpair.c sockopt.c startup.c stat.c \
+  select.c sendrecv.c \
+  shutdown.c sleep.c socket.c sockopt.c startup.c stat.c \
   symlink.c system.c times.c truncate.c unixsupport.c windir.c winwait.c \
   write.c winlist.c winworker.c windbug.c utimes.c
 
@@ -64,7 +64,7 @@ $(UNIX_FILES) $(UNIX_CAML_FILES): %: ../unix/%
 
 .PHONY: depend
 depend: $(ALL_FILES) $(UNIX_CAML_FILES) unix.ml
-	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash $(UNIX_CAML_FILES) \
+	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash $(UNIX_CAML_FILES) \
 	  unix.ml > .depend
 
 include .depend

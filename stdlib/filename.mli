@@ -51,8 +51,9 @@ val check_suffix : string -> string -> bool
 
 val chop_suffix : string -> string -> string
 (** [chop_suffix name suff] removes the suffix [suff] from
-    the filename [name].
-    @raise Invalid_argument if [name] does not end with the suffix [suff].
+   the filename [name]. The behavior is undefined if [name] does not
+   end with the suffix [suff]. [chop_suffix_opt] is thus recommended
+   instead.
 *)
 
 val chop_suffix_opt: suffix:string -> string -> string option

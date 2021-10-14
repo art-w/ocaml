@@ -268,16 +268,14 @@ enable colors unconditionally;
 .B never
 disable color output.
 
-The environment variable "OCAML_COLOR" is considered if \-color is not
-provided. Its values are auto/always/never as above.
-
-If \-color is not provided, "OCAML_COLOR" is not set and the environment
-variable "NO_COLOR" is set, then color output is disabled. Otherwise,
-the default setting is
+The default setting is
 .B auto,
 and the current heuristic
 checks that the "TERM" environment variable exists and is
 not empty or "dumb", and that isatty(stderr) holds.
+
+The environment variable "OCAML_COLOR" is considered if \-color is not
+provided. Its values are auto/always/never as above.
 
 .TP
 .BI \-error\-style \ mode
@@ -1027,7 +1025,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-7\-9\-27\-29\-30\-32..42\-44\-45\-48\-50\-60\-66..70 .
+.BR \-w\ +a\-4\-6\-7\-9\-27\-29\-30\-32..42\-44\-45\-48\-50\-60\-66\-67\-68 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.

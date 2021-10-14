@@ -39,9 +39,8 @@ let dir_trace ppf lid =
           if Obj.is_block clos
           && (Obj.tag clos = Obj.closure_tag || Obj.tag clos = Obj.infix_tag)
           && (match
-                Types.get_desc
-                  (Ctype.expand_head !Topcommon.toplevel_env desc.val_type)
-              with Tarrow _ -> true | _ -> false)
+                Ctype.(repr (expand_head !Topcommon.toplevel_env desc.val_type))
+              with {desc=Tarrow _} -> true | _ -> false)
           then begin
           match is_traced clos with
           | Some opath ->
@@ -120,6 +119,9 @@ let _ = Topcommon.add_directive "untrace_all"
 (* --- *)
 
 
+let usage = "Usage: ocaml <options> <object-files> [script-file [arguments]]\n\
+             options are:"
+
 let preload_objects = ref []
 
 (* Position of the first non expanded argument *)
@@ -157,12 +159,11 @@ let prepare ppf =
       Format.fprintf ppf "Uncaught exception: %s\n" (Printexc.to_string x);
       false
 
-let input_argument name =
-  let filename = Toploop.filename_of_input name in
+(* If [name] is "", then the "file" is stdin treated as a script file. *)
+let file_argument name =
   let ppf = Format.err_formatter in
-  if Filename.check_suffix filename ".cmo"
-          || Filename.check_suffix filename ".cma"
-  then preload_objects := filename :: !preload_objects
+  if Filename.check_suffix name ".cmo" || Filename.check_suffix name ".cma"
+  then preload_objects := name :: !preload_objects
   else if is_expanded !current then begin
     (* Script files are not allowed in expand options because otherwise the
        check in override arguments may fail since the new argv can be larger
@@ -170,7 +171,7 @@ let input_argument name =
     *)
     Printf.eprintf "For implementation reasons, the toplevel does not support\
    \ having script files (here %S) inside expanded arguments passed through the\
-   \ -args{,0} command-line option.\n" filename;
+   \ -args{,0} command-line option.\n" name;
     raise (Compenv.Exit_with_status 2)
   end else begin
       let newargs = Array.sub !argv !current
@@ -183,7 +184,6 @@ let input_argument name =
       else raise (Compenv.Exit_with_status 2)
     end
 
-let file_argument x = input_argument (Toploop.File x)
 
 let wrap_expand f s =
   let start = !current in
@@ -193,11 +193,10 @@ let wrap_expand f s =
 
 module Options = Main_args.Make_bytetop_options (struct
     include Main_args.Default.Topmain
-    let _stdin () = input_argument Toploop.Stdin
+    let _stdin () = file_argument ""
     let _args = wrap_expand Arg.read_arg
     let _args0 = wrap_expand Arg.read_arg0
     let anonymous s = file_argument s
-    let _eval s = input_argument (Toploop.String  s)
 end)
 
 let () =
@@ -210,10 +209,15 @@ let () =
 
 let main () =
   let ppf = Format.err_formatter in
-  let program = "ocaml" in
   Compenv.readenv ppf Before_args;
-  Clflags.add_arguments __LOC__ Options.list;
-  Compenv.parse_arguments ~current argv file_argument program;
+  let list = ref Options.list in
+  begin
+    try
+      Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
+    with
+    | Arg.Bad msg -> Printf.eprintf "%s" msg; raise (Compenv.Exit_with_status 2)
+    | Arg.Help msg -> Printf.printf "%s" msg; raise (Compenv.Exit_with_status 0)
+  end;
   Compenv.readenv ppf Before_link;
   Compmisc.read_clflags_from_env ();
   if not (prepare ppf) then raise (Compenv.Exit_with_status 2);

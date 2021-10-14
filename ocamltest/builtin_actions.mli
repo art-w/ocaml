@@ -49,5 +49,3 @@ val script : Actions.t
 val check_program_output : Actions.t
 
 val file_exists : Actions.t
-
-val copy : Actions.t

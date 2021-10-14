@@ -41,6 +41,10 @@
 
 #include "s.h"
 
+#ifdef BOOTSTRAPPING_FLEXLINK
+#undef SUPPORT_DYNAMIC_LINKING
+#endif
+
 #ifndef CAML_NAME_SPACE
 #include "compatibility.h"
 #endif

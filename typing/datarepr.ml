@@ -24,16 +24,18 @@ open Btype
 let free_vars ?(param=false) ty =
   let ret = ref TypeSet.empty in
   let rec loop ty =
+    let ty = repr ty in
     if try_mark_node ty then
-      match get_desc ty with
+      match ty.desc with
       | Tvar _ ->
           ret := TypeSet.add ty !ret
       | Tvariant row ->
+          let row = row_repr row in
           iter_row loop row;
           if not (static_row row) then begin
-            match get_desc (row_more row) with
+            match row.row_more.desc with
             | Tvar _ when param -> ret := TypeSet.add ty !ret
-            | _ -> loop (row_more row)
+            | _ -> loop row.row_more
           end
       (* XXX: What about Tobject ? *)
       | _ ->
@@ -68,6 +70,11 @@ let constructor_args ~current_unit priv cd_args cd_res path rep =
   | Cstr_record lbls ->
       let arg_vars_set = free_vars ~param:true (newgenty (Ttuple tyl)) in
       let type_params = TypeSet.elements arg_vars_set in
+      let type_unboxed =
+        match rep with
+        | Record_unboxed _ -> unboxed_true_default_false
+        | _ -> unboxed_false_default_false
+      in
       let arity = List.length type_params in
       let tdecl =
         {
@@ -83,7 +90,7 @@ let constructor_args ~current_unit priv cd_args cd_res path rep =
           type_loc = Location.none;
           type_attributes = [];
           type_immediate = Unknown;
-          type_unboxed_default = false;
+          type_unboxed;
           type_uid = Uid.mk ~current_unit;
         }
       in
@@ -91,12 +98,13 @@ let constructor_args ~current_unit priv cd_args cd_res path rep =
       [ newgenconstr path type_params ],
       Some tdecl
 
-let constructor_descrs ~current_unit ty_path decl cstrs rep =
+let constructor_descrs ~current_unit ty_path decl cstrs =
   let ty_res = newgenconstr ty_path decl.type_params in
-  let num_consts = ref 0 and num_nonconsts = ref 0 in
+  let num_consts = ref 0 and num_nonconsts = ref 0  and num_normal = ref 0 in
   List.iter
-    (fun {cd_args; _} ->
-      if cd_args = Cstr_tuple [] then incr num_consts else incr num_nonconsts)
+    (fun {cd_args; cd_res; _} ->
+      if cd_args = Cstr_tuple [] then incr num_consts else incr num_nonconsts;
+      if cd_res = None then incr num_normal)
     cstrs;
   let rec describe_constructors idx_const idx_nonconst = function
       [] -> []
@@ -107,22 +115,20 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
           | None -> ty_res
         in
         let (tag, descr_rem) =
-          match cd_args, rep with
-          | _, Variant_unboxed ->
+          match cd_args with
+          | _ when decl.type_unboxed.unboxed ->
             assert (rem = []);
             (Cstr_unboxed, [])
-          | Cstr_tuple [], Variant_regular ->
-             (Cstr_constant idx_const,
-              describe_constructors (idx_const+1) idx_nonconst rem)
-          | _, Variant_regular  ->
-             (Cstr_block idx_nonconst,
-              describe_constructors idx_const (idx_nonconst+1) rem) in
+          | Cstr_tuple [] -> (Cstr_constant idx_const,
+                   describe_constructors (idx_const+1) idx_nonconst rem)
+          | _  -> (Cstr_block idx_nonconst,
+                   describe_constructors idx_const (idx_nonconst+1) rem) in
         let cstr_name = Ident.name cd_id in
         let existentials, cstr_args, cstr_inlined =
           let representation =
-            match rep with
-            | Variant_unboxed -> Record_unboxed true
-            | Variant_regular -> Record_inlined idx_nonconst
+            if decl.type_unboxed.unboxed
+            then Record_unboxed true
+            else Record_inlined idx_nonconst
           in
           constructor_args ~current_unit decl.type_private cd_args cd_res
             (Path.Pdot (ty_path, cstr_name)) representation
@@ -136,6 +142,7 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
             cstr_tag = tag;
             cstr_consts = !num_consts;
             cstr_nonconsts = !num_nonconsts;
+            cstr_normal = !num_normal;
             cstr_private = decl.type_private;
             cstr_generalized = cd_res <> None;
             cstr_loc = cd_loc;
@@ -165,6 +172,7 @@ let extension_descr ~current_unit path_ext ext =
       cstr_consts = -1;
       cstr_nonconsts = -1;
       cstr_private = ext.ext_private;
+      cstr_normal = -1;
       cstr_generalized = ext.ext_ret_type <> None;
       cstr_loc = ext.ext_loc;
       cstr_attributes = ext.ext_attributes;
@@ -172,10 +180,9 @@ let extension_descr ~current_unit path_ext ext =
       cstr_uid = ext.ext_uid;
     }
 
-let none =
-  create_expr (Ttuple []) ~level:(-1) ~scope:Btype.generic_level ~id:(-1)
-    (* Clearly ill-formed type *)
-
+let none = Private_type_expr.create (Ttuple [])
+    ~level:(-1) ~scope:Btype.generic_level ~id:(-1)
+                                        (* Clearly ill-formed type *)
 let dummy_label =
   { lbl_name = ""; lbl_res = none; lbl_arg = none; lbl_mut = Immutable;
     lbl_pos = (-1); lbl_all = [||]; lbl_repres = Record_regular;
@@ -226,8 +233,7 @@ let find_constr_by_tag tag cstrlist =
 
 let constructors_of_type ~current_unit ty_path decl =
   match decl.type_kind with
-  | Type_variant (cstrs,rep) ->
-     constructor_descrs ~current_unit ty_path decl cstrs rep
+  | Type_variant cstrs -> constructor_descrs ~current_unit ty_path decl cstrs
   | Type_record _ | Type_abstract | Type_open -> []
 
 let labels_of_type ty_path decl =

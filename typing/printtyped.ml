@@ -155,10 +155,6 @@ let arg_label i ppf = function
   | Labelled s -> line i ppf "Labelled \"%s\"\n" s
 ;;
 
-let typevars ppf vs =
-  List.iter (fun x -> fprintf ppf " %a" Pprintast.tyvar x.txt) vs
-;;
-
 let record_representation i ppf = let open Types in function
   | Record_regular -> line i ppf "Record_regular\n"
   | Record_float -> line i ppf "Record_float\n"
@@ -396,15 +392,14 @@ and expression i ppf x =
       expression i ppf e1;
       expression i ppf e2;
       expression i ppf e3;
-  | Texp_send (e, Tmeth_name s) ->
+  | Texp_send (e, Tmeth_name s, eo) ->
       line i ppf "Texp_send \"%s\"\n" s;
-      expression i ppf e
-  | Texp_send (e, Tmeth_val s) ->
+      expression i ppf e;
+      option i expression ppf eo
+  | Texp_send (e, Tmeth_val s, eo) ->
       line i ppf "Texp_send \"%a\"\n" fmt_ident s;
-      expression i ppf e
-  | Texp_send (e, Tmeth_ancestor(s, _)) ->
-      line i ppf "Texp_send \"%a\"\n" fmt_ident s;
-      expression i ppf e
+      expression i ppf e;
+      option i expression ppf eo
   | Texp_new (li, _, _) -> line i ppf "Texp_new %a\n" fmt_path li;
   | Texp_setinstvar (_, s, _, e) ->
       line i ppf "Texp_setinstvar \"%a\"\n" fmt_path s;
@@ -519,9 +514,8 @@ and extension_constructor i ppf x =
 
 and extension_constructor_kind i ppf x =
   match x with
-      Text_decl(v, a, r) ->
+      Text_decl(a, r) ->
         line i ppf "Text_decl\n";
-        if v <> [] then line (i+1) ppf "vars%a\n" typevars v;
         constructor_arguments (i+1) ppf a;
         option (i+1) core_type ppf r;
     | Text_rebind(p, _) ->
@@ -888,11 +882,10 @@ and core_type_x_core_type_x_location i ppf (ct1, ct2, l) =
   core_type (i+1) ppf ct1;
   core_type (i+1) ppf ct2;
 
-and constructor_decl i ppf {cd_id; cd_name = _; cd_vars;
-                            cd_args; cd_res; cd_loc; cd_attributes} =
+and constructor_decl i ppf {cd_id; cd_name = _; cd_args; cd_res; cd_loc;
+                            cd_attributes} =
   line i ppf "%a\n" fmt_location cd_loc;
   line (i+1) ppf "%a\n" fmt_ident cd_id;
-  if cd_vars <> [] then line (i+1) ppf "cd_vars =%a\n" typevars cd_vars;
   attributes i ppf cd_attributes;
   constructor_arguments (i+1) ppf cd_args;
   option (i+1) core_type ppf cd_res
@@ -931,7 +924,7 @@ and value_binding i ppf x =
   expression (i+1) ppf x.vb_expr
 
 and string_x_expression i ppf (s, _, e) =
-  line i ppf "<override> \"%a\"\n" fmt_ident s;
+  line i ppf "<override> \"%a\"\n" fmt_path s;
   expression (i+1) ppf e;
 
 and record_field i ppf = function

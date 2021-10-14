@@ -61,8 +61,6 @@
 #include "caml/startup_aux.h"
 #include "caml/version.h"
 
-#include "build_config.h"
-
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
@@ -323,7 +321,7 @@ static int parse_command_line(char_os **argv)
         exit(0);
         break;
       case 'b':
-        caml_record_backtraces(1);
+        caml_record_backtrace(Val_true);
         break;
       case 'I':
         if (argv[i + 1] != NULL) {

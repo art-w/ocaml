@@ -35,8 +35,10 @@ void caml_init_backtrace(void)
 }
 
 /* Start or stop the backtrace machinery */
-CAMLexport void caml_record_backtraces(int flag)
+CAMLprim value caml_record_backtrace(value vflag)
 {
+  int flag = Int_val(vflag);
+
   if (flag != Caml_state->backtrace_active) {
     Caml_state->backtrace_active = flag;
     Caml_state->backtrace_pos = 0;
@@ -47,12 +49,6 @@ CAMLexport void caml_record_backtraces(int flag)
        Caml_state->backtrace_buffer). So we don't have to allocate it here.
     */
   }
-  return;
-}
-
-CAMLprim value caml_record_backtrace(value flag)
-{
-  caml_record_backtraces(Int_val(flag));
   return Val_unit;
 }
 

@@ -67,23 +67,16 @@ let append_to_env loc variable_name value env =
   with Variables.No_such_variable name ->
     no_such_variable loc name
 
-let interpret_environment_statement env statement = match statement.node with
+let interprete_environment_statement env statement = match statement.node with
   | Assignment (decl, var, value) ->
       add_to_env decl statement.loc var.node value.node env
   | Append (var, value) ->
       append_to_env statement.loc var.node value.node env
   | Include modifiers_name ->
       apply_modifiers env modifiers_name
-  | Unset var ->
-      let var =
-        match Variables.find_variable var.node with
-        | None -> Variables.make (var.node,"User variable")
-        | Some var -> var
-      in
-      Environments.unsetenv var env
 
-let interpret_environment_statements env l =
-  List.fold_left interpret_environment_statement env l
+let interprete_environment_statements env l =
+  List.fold_left interprete_environment_statement env l
 
 type test_tree =
   | Node of

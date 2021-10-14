@@ -1,7 +1,7 @@
 (* TEST
 
 include dynlink
-readonly_files = "host.ml plugin.ml"
+files = "host.ml plugin.ml"
 libraries = ""
 
 flags += " -g "

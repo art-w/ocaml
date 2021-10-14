@@ -6,7 +6,5 @@ libref
 manual.hmanual
 manual.hmanual.kwd
 manual.css
-odoc.css
-highlight.pack.js
 *.htoc
 *.svg

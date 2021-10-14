@@ -28,9 +28,8 @@ OCAMLC=$(BEST_OCAMLC) -g -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLOPT=$(BEST_OCAMLOPT) -g -nostdlib -I $(ROOTDIR)/stdlib
 
 # COMPFLAGS should be in sync with the toplevel Makefile's COMPFLAGS.
-COMPFLAGS=-strict-sequence -principal -absname \
-          -w +a-4-9-40-41-42-44-45-48-66-70 \
-          -warn-error +A \
+COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-40-41-42-44-45-48-66 \
+	  -warn-error A \
           -bin-annot -safe-string -strict-formats
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
@@ -281,19 +280,21 @@ DEPEND_DUMMY_FILES=\
 
 depend: beforedepend
 	touch $(DEPEND_DUMMY_FILES)
-	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
+	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
 	  -I byte -bytecode *.mli *.ml byte/dynlink.ml > .depend
-	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
+	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
 	  -I native -native *.ml native/dynlink.ml >> .depend
 	rm -f $(DEPEND_DUMMY_FILES)
 
 include .depend
 
-%.cmi: %.mli
+.SUFFIXES: .ml .mli .cmi .cmo .cmx
+
+.mli.cmi:
 	$(OCAMLC) -c $(COMPFLAGS) $<
 
-%.cmo: %.ml
+.ml.cmo:
 	$(OCAMLC) -c $(COMPFLAGS) $<
 
-%.cmx: %.ml
+.ml.cmx:
 	$(OCAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<

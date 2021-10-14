@@ -46,9 +46,12 @@ type is_safe =
   | Unsafe
 
 type primitive =
+  | Pidentity
   | Pbytes_to_string
   | Pbytes_of_string
   | Pignore
+  | Prevapply
+  | Pdirapply
     (* Globals *)
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
@@ -73,7 +76,7 @@ type primitive =
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
   | Pintcomp of integer_comparison
-  (* Comparisons that return int (not bool like above) for ordering *)
+  (* Comparions that return int (not bool like above) for ordering *)
   | Pcompare_ints | Pcompare_floats | Pcompare_bints of boxed_integer
   | Poffsetint of int
   | Poffsetref of int

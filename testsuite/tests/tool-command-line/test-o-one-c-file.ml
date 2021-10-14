@@ -1,5 +1,5 @@
 (* TEST
-readonly_files = "hello.c"
+files = "hello.c"
 * setup-ocamlopt.opt-build-env
 ** script
 script = "mkdir outputdir"

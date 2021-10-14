@@ -122,14 +122,12 @@ let stack_slot slot ty =
 
 (* Calling conventions *)
 
-let size_domainstate_args = 64 * size_int
-
 let calling_conventions
-    first_int last_int first_float last_float make_stack first_stack arg =
+    first_int last_int first_float last_float make_stack arg =
   let loc = Array.make (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
-  let ofs = ref first_stack in
+  let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i) with
     | Val | Int | Addr as ty ->
@@ -149,38 +147,32 @@ let calling_conventions
           ofs := !ofs + size_float
         end
   done;
-  (loc, Misc.align (max 0 !ofs) 16) (* Keep stack 16-aligned. *)
+  (loc, Misc.align !ofs 16) (* Keep stack 16-aligned. *)
 
-let incoming ofs =
-  if ofs >= 0
-  then Incoming ofs
-  else Domainstate (ofs + size_domainstate_args)
-let outgoing ofs =
-  if ofs >= 0
-  then Outgoing ofs
-  else Domainstate (ofs + size_domainstate_args)
+let incoming ofs = Incoming ofs
+let outgoing ofs = Outgoing ofs
 let not_supported _ = fatal_error "Proc.loc_results: cannot call"
 
-let max_arguments_for_tailcalls = 16 (* in regs *) + 64 (* in domain state *)
+let max_arguments_for_tailcalls = 16
 
 (* OCaml calling convention:
      first integer args in a0 .. a7, s2 .. s9
      first float args in fa0 .. fa7, fs2 .. fs9
-     remaining args in domain state area, then on stack.
+     remaining args on stack.
    Return values in a0 .. a7, s2 .. s9 or fa0 .. fa7, fs2 .. fs9. *)
 
 let loc_arguments arg =
-  calling_conventions 0 15 110 125 outgoing (- size_domainstate_args) arg
+  calling_conventions 0 15 110 125 outgoing arg
 
 let loc_parameters arg =
   let (loc, _ofs) =
-    calling_conventions 0 15 110 125 incoming (- size_domainstate_args) arg
+    calling_conventions 0 15 110 125 incoming arg
   in
   loc
 
 let loc_results res =
   let (loc, _ofs) =
-    calling_conventions 0 15 110 125 not_supported 0 res
+    calling_conventions 0 15 110 125 not_supported res
   in
   loc
 
@@ -227,7 +219,7 @@ let loc_external_arguments ty_args =
   external_calling_conventions 0 7 110 117 outgoing arg
 
 let loc_external_results res =
-  let (loc, _ofs) = calling_conventions 0 1 110 111 not_supported 0 res
+  let (loc, _ofs) = calling_conventions 0 1 110 111 not_supported res
   in loc
 
 (* Exceptions are in a0 *)
@@ -241,10 +233,9 @@ let regs_are_volatile _ = false
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_call =
-  (* s0-s11 and fs0-fs11 are callee-save.  However s2 needs to be in this
-     list since it is clobbered by caml_c_call itself. *)
+  (* s0-s11 and fs0-fs11 are callee-save *)
   Array.of_list(List.map phys_reg
-    [0; 1; 2; 3; 4; 5; 6; 7; 8; 16; 17; 18; 19; 20; 22;
+    [0; 1; 2; 3; 4; 5; 6; 7; 16; 17; 18; 19; 20; 22;
      100; 101; 102; 103; 104; 105; 106; 107; 110; 111; 112; 113; 114; 115; 116;
      117; 128; 129; 130; 131])
 
@@ -256,7 +247,7 @@ let destroyed_at_alloc =
 let destroyed_at_oper = function
   | Iop(Icall_ind | Icall_imm _ | Iextcall{alloc = true; _}) -> all_phys_regs
   | Iop(Iextcall{alloc = false; _}) -> destroyed_at_c_call
-  | Iop(Ialloc _) | Iop(Ipoll _) -> destroyed_at_alloc
+  | Iop(Ialloc _) -> destroyed_at_alloc
   | Iop(Istore(Single, _, _)) -> [| phys_reg 100 |]
   | Iswitch _ -> [| phys_reg 22 |]  (* t0 *)
   | _ -> [||]
@@ -274,6 +265,16 @@ let safe_register_pressure = function
 let max_register_pressure = function
   | Iextcall _ -> [| 9; 12 |]
   | _ -> [| 23; 30 |]
+
+(* Pure operations (without any side effect besides updating their result
+   registers). *)
+
+let op_is_pure = function
+  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | Ispecific(Imultaddf _ | Imultsubf _) -> true
+  | _ -> true
 
 (* Layout of the stack *)
 

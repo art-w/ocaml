@@ -206,10 +206,8 @@ module T = struct
       (sub.extension_constructor sub ptyexn_constructor)
 
   let map_extension_constructor_kind sub = function
-      Pext_decl(vars, ctl, cto) ->
-        Pext_decl(List.map (map_loc sub) vars,
-                  map_constructor_arguments sub ctl,
-                  map_opt (sub.typ sub) cto)
+      Pext_decl(ctl, cto) ->
+        Pext_decl(map_constructor_arguments sub ctl, map_opt (sub.typ sub) cto)
     | Pext_rebind li ->
         Pext_rebind (map_loc sub li)
 
@@ -486,8 +484,7 @@ module P = struct
     | Ppat_var s -> var ~loc ~attrs (map_loc sub s)
     | Ppat_alias (p, s) -> alias ~loc ~attrs (sub.pat sub p) (map_loc sub s)
     | Ppat_constant c -> constant ~loc ~attrs (sub.constant sub c)
-    | Ppat_interval (c1, c2) ->
-        interval ~loc ~attrs (sub.constant sub c1) (sub.constant sub c2)
+    | Ppat_interval (c1, c2) -> interval ~loc ~attrs c1 c2
     | Ppat_tuple pl -> tuple ~loc ~attrs (List.map (sub.pat sub) pl)
     | Ppat_construct (l, p) ->
         construct ~loc ~attrs (map_loc sub l)
@@ -701,11 +698,9 @@ let default_mapper =
 
 
     constructor_declaration =
-      (fun this {pcd_name; pcd_vars; pcd_args;
-                 pcd_res; pcd_loc; pcd_attributes} ->
+      (fun this {pcd_name; pcd_args; pcd_res; pcd_loc; pcd_attributes} ->
         Type.constructor
           (map_loc this pcd_name)
-          ~vars:(List.map (map_loc this) pcd_vars)
           ~args:(T.map_constructor_arguments this pcd_args)
           ?res:(map_opt (this.typ this) pcd_res)
           ~loc:(this.location this pcd_loc)

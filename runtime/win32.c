@@ -48,12 +48,7 @@
 #include "caml/sys.h"
 
 #include "caml/config.h"
-
-#if defined(SUPPORT_DYNAMIC_LINKING) && !defined(BUILDING_LIBCAMLRUNS)
-#define WITH_DYNAMIC_LINKING
-#endif
-
-#ifdef WITH_DYNAMIC_LINKING
+#ifdef SUPPORT_DYNAMIC_LINKING
 #include <flexdll.h>
 #endif
 
@@ -219,7 +214,7 @@ wchar_t * caml_search_dll_in_path(struct ext_table * path, const wchar_t * name)
   return res;
 }
 
-#ifdef WITH_DYNAMIC_LINKING
+#ifdef SUPPORT_DYNAMIC_LINKING
 
 void * caml_dlopen(wchar_t * libname, int for_execution, int global)
 {
@@ -280,7 +275,7 @@ char * caml_dlerror(void)
   return "dynamic loading not supported on this platform";
 }
 
-#endif /* WITH_DYNAMIC_LINKING */
+#endif
 
 /* Proper emulation of signal(), including ctrl-C and ctrl-break */
 
@@ -455,7 +450,7 @@ void caml_signal_thread(void * lpParam)
     char iobuf[2];
     /* This shall always return a single character */
     ret = ReadFile(h, iobuf, 1, &numread, NULL);
-    if (!ret || numread != 1) caml_do_exit(2);
+    if (!ret || numread != 1) caml_sys_exit(Val_int(2));
     switch (iobuf[0]) {
     case 'C':
       caml_record_signal(SIGINT);
@@ -1018,27 +1013,4 @@ CAMLexport int caml_win32_isatty(int fd)
 int caml_num_rows_fd(int fd)
 {
   return -1;
-}
-
-/* UCRT clock function returns wall-clock time */
-CAMLexport clock_t caml_win32_clock(void)
-{
-  FILETIME c, e, stime, utime;
-  ULARGE_INTEGER tmp;
-  ULONGLONG total, clocks_per_sec;
-
-  if (!(GetProcessTimes(GetCurrentProcess(), &c, &e, &stime, &utime))) {
-    return (clock_t)(-1);
-  }
-
-  tmp.u.LowPart = stime.dwLowDateTime;
-  tmp.u.HighPart = stime.dwHighDateTime;
-  total = tmp.QuadPart;
-  tmp.u.LowPart = utime.dwLowDateTime;
-  tmp.u.HighPart = utime.dwHighDateTime;
-  total += tmp.QuadPart;
-
-  /* total in 100-nanosecond intervals (1e7 / CLOCKS_PER_SEC) */
-  clocks_per_sec = INT64_LITERAL(10000000U) / (ULONGLONG)CLOCKS_PER_SEC;
-  return (clock_t)(total / clocks_per_sec);
 }

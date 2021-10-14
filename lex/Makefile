@@ -17,21 +17,17 @@
 
 ROOTDIR = ..
 
-# NOTE: it is important that OCAMLLEX is defined *before* Makefile.common
-# gets included, so that its definition here takes precedence
-# over the one there.
-OCAMLLEX ?= $(BOOT_OCAMLLEX)
-
 include $(ROOTDIR)/Makefile.common
 
 OCAMLYACCFLAGS = -v
 
 CAMLC = $(BOOT_OCAMLC) -strict-sequence -nostdlib \
         -I $(ROOTDIR)/boot -use-prims $(ROOTDIR)/runtime/primitives
-CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) -nostdlib -I $(ROOTDIR)/stdlib
-COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
+CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) -nostdlib -I $(ROOTDIR)/stdlib
+COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
             -safe-string -strict-sequence -strict-formats -bin-annot
 LINKFLAGS =
+OCAMLLEX ?= $(BOOT_OCAMLLEX)
 CAMLDEP = $(BOOT_OCAMLC) -depend
 DEPFLAGS = -slash
 DEPINCLUDES =
@@ -68,13 +64,16 @@ clean::
 
 beforedepend:: lexer.ml
 
-%.cmo: %.ml
+.SUFFIXES:
+.SUFFIXES: .ml .cmo .mli .cmi .cmx
+
+.ml.cmo:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
-%.cmi: %.mli
+.mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
-%.cmx: %.ml
+.ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend: beforedepend

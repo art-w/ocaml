@@ -15,14 +15,16 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#define CAML_INTERNALS
-#include <caml/misc.h>
 #include <caml/callback.h>
 
 extern int fib(int n);
 extern char * format_result(int n);
 
-int main_os(int argc, char_os ** argv)
+#ifdef _WIN32
+int wmain(int argc, wchar_t ** argv)
+#else
+int main(int argc, char ** argv)
+#endif
 {
   printf("Initializing OCaml code...\n");
 

@@ -19,8 +19,6 @@
 #define CAML_OSDEPS_H
 
 #ifdef _WIN32
-#include <time.h>
-
 extern unsigned short caml_win32_major;
 extern unsigned short caml_win32_minor;
 extern unsigned short caml_win32_build;
@@ -129,18 +127,6 @@ CAMLextern int win_wide_char_to_multi_byte(const wchar_t* s,
                                        char *out,
                                        int outlen);
 
-CAMLextern int caml_win32_isatty(int fd);
-
-CAMLextern void caml_expand_command_line (int *, wchar_t ***);
-
-CAMLextern clock_t caml_win32_clock(void);
-
-#endif /* _WIN32 */
-
-#endif /* CAML_INTERNALS */
-
-#ifdef _WIN32
-
 /* [caml_stat_strdup_to_utf16(s)] returns a NULL-terminated copy of [s],
    re-encoded in UTF-16.  The encoding of [s] is assumed to be UTF-8 if
    [caml_windows_unicode_runtime_enabled] is non-zero **and** [s] is valid
@@ -166,6 +152,12 @@ CAMLextern char* caml_stat_strdup_of_utf16(const wchar_t *s);
 */
 CAMLextern value caml_copy_string_of_utf16(const wchar_t *s);
 
+CAMLextern int caml_win32_isatty(int fd);
+
+CAMLextern void caml_expand_command_line (int *, wchar_t ***);
+
 #endif /* _WIN32 */
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_OSDEPS_H */

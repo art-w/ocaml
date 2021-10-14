@@ -70,7 +70,7 @@ function set_configuration {
             dep='--disable-dependency-generation'
         ;;
         msvc64)
-            build='--build=x86_64-pc-cygwin'
+            build='--build=x86_64-unknown-cygwin'
             host='--host=x86_64-pc-windows'
             # Explicitly test dependency generation on msvc64
             dep='--enable-dependency-generation'
@@ -89,7 +89,7 @@ function set_configuration {
 }
 
 APPVEYOR_BUILD_FOLDER=$(echo "$APPVEYOR_BUILD_FOLDER" | cygpath -f -)
-FLEXDLLROOT="$PROGRAMFILES/flexdll"
+FLEXDLLROOT="$(echo "$OCAMLROOT" | cygpath -f -)/bin/flexdll"
 OCAMLROOT=$(echo "$OCAMLROOT" | cygpath -f - -m)
 
 if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
@@ -178,7 +178,9 @@ case "$1" in
         # For an explanation of the sed command, see
         # https://github.com/appveyor/ci/issues/1824
         script --quiet --return --command \
-          "$MAKE -C ../$BUILD_PREFIX-$PORT world.opt" \
+          "( test "$BOOTSTRAP_FLEXDLL" = 'false' || "\
+"$MAKE -C ../$BUILD_PREFIX-$PORT flexdll ) && "\
+"$MAKE -C ../$BUILD_PREFIX-$PORT world.opt" \
           "../$BUILD_PREFIX-$PORT/build.log" |
             sed -e 's/\d027\[K//g' \
                 -e 's/\d027\[m/\d027[0m/g' \

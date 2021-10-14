@@ -966,19 +966,6 @@ Error: Constraints are not satisfied in this type.
        Type 'a u t should be an instance of g t
 |}];;
 
-(* Full unification trace reported for "Constraints are not satisfied in this type" *)
-type ('a,'b) t constraint 'a = 'b
-               constraint 'a = int
-  and 'a u = (float,string) t;;
-[%%expect {|
-Line 3, characters 13-29:
-3 |   and 'a u = (float,string) t;;
-                 ^^^^^^^^^^^^^^^^
-Error: Constraints are not satisfied in this type.
-       Type (float, string) t should be an instance of (int, int) t
-       Type float is not compatible with type int
-|}]
-
 (* Example of wrong expansion *)
 type 'a u = < m : 'a v > and 'a v = 'a list u;;
 [%%expect {|
@@ -1018,14 +1005,14 @@ type u = 'a t as 'a
 |}];;
 
 (* pass typetexp, but fails during Typedecl.check_recursion *)
-type ('a1, 'b1) ty1 = 'a1 -> unit constraint 'a1 = [> `V1 of ('a1, 'b1) ty2 as 'b1]
-and  ('a2, 'b2) ty2 = 'b2 -> unit constraint 'b2 = [> `V2 of ('a2, 'b2) ty1 as 'a2];;
+type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b]
+and  ('a, 'b) b = 'b -> unit constraint 'b = [> `A of ('a, 'b) a as 'a];;
 [%%expect {|
-Line 1, characters 0-83:
-1 | type ('a1, 'b1) ty1 = 'a1 -> unit constraint 'a1 = [> `V1 of ('a1, 'b1) ty2 as 'b1]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of ty1 contains a cycle:
-       [> `V1 of ('a, 'b) ty2 as 'b ] as 'a
+Line 1, characters 0-71:
+1 | type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The definition of a contains a cycle:
+       [> `B of ('a, 'b) b as 'b ] as 'a
 |}];;
 
 (* PR#8359: expanding may change original in Ctype.unify2 *)
@@ -1105,11 +1092,12 @@ Line 4, characters 11-60:
 Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
  n.
 val f : unit -> < m : int; n : int > = <fun>
-Line 5, characters 27-39:
+Line 5, characters 11-56:
 5 | let f () = object (self:c) method n = 1 method m = 2 end;;
-                               ^^^^^^^^^^^^
-Error: This object is expected to have type : c
-       This type does not have a method n.
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This object is expected to have type c but actually has type
+         < m : int; n : 'a >
+       The first object type has no method n
 |}];;
 
 
@@ -1176,12 +1164,6 @@ Error: Signature mismatch:
          val f : (< m : 'a. 'a * ('a * 'b) > as 'b) -> unit
        is not included in
          val f : < m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) > -> unit
-       The type (< m : 'a. 'a * ('a * 'd) > as 'd) -> unit
-       is not compatible with the type
-         < m : 'b. 'b * ('b * < m : 'c. 'c * 'e > as 'e) > -> unit
-       The method m has type 'a. 'a * ('a * < m : 'a. 'b >) as 'b,
-       but the expected method type was 'c. 'c * ('b * < m : 'c. 'a >) as 'a
-       The universal variable 'b would escape its scope
 |}];;
 
 module M : sig type 'a t type u = <m: 'a. 'a t> end
@@ -1574,11 +1556,6 @@ Error: Values do not match:
        is not included in
          val f :
            < m : 'a. [< `Bar | `Foo of 'b & int ] as 'c > -> < m : 'b. 'c >
-       The type
-         < m : 'a. [< `Bar | `Foo of 'b & int ] as 'c > -> < m : 'b. 'c >
-       is not compatible with the type
-         < m : 'a. [< `Bar | `Foo of 'b & int ] as 'd > -> < m : 'b. 'd >
-       Types for tag `Foo are incompatible
 |}]
 
 (* PR#6171 *)

@@ -49,9 +49,6 @@ val str : bool
 val objext : string
 (** Extension of object files *)
 
-val libext : string
-(** Extension of library files *)
-
 val asmext : string
 (** Extension of assembly files *)
 

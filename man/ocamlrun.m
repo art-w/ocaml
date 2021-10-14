@@ -74,23 +74,10 @@ Search the directory
 .I dir
 for dynamically-loaded libraries, in addition to the standard search path.
 .TP
-.BI \-m \ file
-Print the magic number of the bytecode executable
-.I file
-and exit.
-.TP
-.B \-M
-Print the magic number expected for bytecode executables by this version
-of the runtime and exit.
-.TP
 .B \-p
 Print the names of the primitives known to this version of
 .BR ocamlrun (1)
 and exit.
-.TP
-.B \-t
-Increment the trace level for the debug runtime (ignored by the standard
-runtime).
 .TP
 .B \-v
 Direct the memory manager to print verbose messages on standard error.
@@ -132,87 +119,18 @@ sign, a decimal number (or a hexadecimal number prefixed by
 and an optional multiplier. If the letter is followed by anything
 else, the corresponding option is set to 1. Unknown letters
 are ignored.
-The options are documented below; the options
-.B a, i, l, m, M, n, o, O, s, v, w
-correspond to the fields of the
+The options are documented below; the
+last six correspond to the fields of the
 .B control
 record documented in
 .IR "The OCaml user's manual",
 chapter "Standard Library", section "Gc".
-
-.RS 7
-.TP
-.BR a \ (allocation_policy)
-The policy used for allocating in the OCaml heap.  Possible values
-are 0 for the next-fit policy, 1 for the first-fit
-policy, and 2 for the best-fit policy. The default is 2.
-See the Gc module documentation for details.
+\" FIXME missing: c, H, t, w, W see MPR#7870
 .TP
 .B b
 Trigger the printing of a stack backtrace
 when an uncaught exception aborts the program.
 This option takes no argument.
-.TP
-.B c
-(cleanup_on_exit) Shut the runtime down gracefully on exit. The option
-also enables pooling (as in caml_startup_pooled). This mode can be used
-to detect leaks with a third-party memory debugger.
-.TP
-.BR h
-The initial size of the major heap (in words).
-.TP
-.BR H
-Allocate heap chunks by mmapping huge pages. Huge pages are locked into
-memory, and are not swapped.
-.TP
-.BR i \ (major_heap_increment)
-The default size increment for the major heap (in words if greater than 1000,
-else in percents of the heap size).
-.TP
-.BR l \ (stack_limit)
-The limit (in words) of the stack size.
-.TP
-.BR m \ (custom_minor_ratio)
-Bound on floating garbage for out-of-heap memory
-held by custom values in the minor heap. A minor GC is triggered
-when this much memory is held by custom values located in the minor
-heap. Expressed as a percentage of minor heap size.
-Note: this only applies to values allocated with
-.B caml_alloc_custom_mem
-(e.g. bigarrays).
- Default: 100.
-.TP
-.BR M \ (custom_major_ratio)
-Target ratio of floating garbage to
-major heap size for out-of-heap memory held by custom values
-located in the major heap. The GC speed is adjusted
-to try to use this much memory for dead values that are not yet
-collected. Expressed as a percentage of major heap size.
-The default value keeps the out-of-heap floating garbage about the
-same size as the in-heap overhead.
-Note: this only applies to values allocated with
-.B caml_alloc_custom_mem
-(e.g. bigarrays).
-Default: 44.
-.TP
-.BR n \ (custom_minor_max_size)
-Maximum amount of out-of-heap
-memory for each custom value allocated in the minor heap. When a custom
-value is allocated on the minor heap and holds more than this many
-bytes, only this value is counted against
-.B custom_minor_ratio
-and the rest is directly counted against
-.BR custom_major_ratio .
-Note: this only applies to values allocated with
-.B caml_alloc_custom_mem
-(e.g. bigarrays).
-Default: 8192 bytes.
-.TP
-.BR o \ (space_overhead)
-The major GC speed setting.
-.TP
-.BR O \ (max_overhead)
-The heap compaction trigger setting.
 .TP
 .B p
 Turn on debugging support for
@@ -227,12 +145,65 @@ Turn on randomization of all hash tables by default (see the
 module of the standard library). This option takes no
 argument.
 .TP
+.BR h
+The initial size of the major heap (in words).
+.TP
+.BR a \ (allocation_policy)
+The policy used for allocating in the OCaml heap.  Possible values
+are 0 for the next-fit policy, 1 for the first-fit
+policy, and 2 for the best-fit policy. The default is 2.
+See the Gc module documentation for details.
+.TP
 .BR s \ (minor_heap_size)
 The size of the minor heap (in words).
 .TP
-.B t
-Set the trace level for the debug runtime (ignored by the standard
-runtime).
+.BR i \ (major_heap_increment)
+The default size increment for the major heap (in words).
+.TP
+.BR o \ (space_overhead)
+The major GC speed setting.
+.TP
+.BR O \ (max_overhead)
+The heap compaction trigger setting.
+.TP
+.BR l \ (stack_limit)
+The limit (in words) of the stack size.
+.TP
+.BR M \ (custom_major_ratio)
+Target ratio of floating garbage to
+major heap size for out-of-heap memory held by custom values
+located in the major heap. The GC speed is adjusted
+to try to use this much memory for dead values that are not yet
+collected. Expressed as a percentage of major heap size.
+The default value keeps the out-of-heap floating garbage about the
+same size as the in-heap overhead.
+Note: this only applies to values allocated with
+.B caml_alloc_custom_mem
+(e.g. bigarrays).
+Default: 44.
+.TP
+.BR m \ (custom_minor_ratio)
+Bound on floating garbage for out-of-heap memory
+held by custom values in the minor heap. A minor GC is triggered
+when this much memory is held by custom values located in the minor
+heap. Expressed as a percentage of minor heap size.
+Note: this only applies to values allocated with
+.B caml_alloc_custom_mem
+(e.g. bigarrays).
+ Default: 100.
+.TP
+.BR n \ (custom_minor_max_size)
+Maximum amount of out-of-heap
+memory for each custom value allocated in the minor heap. When a custom
+value is allocated on the minor heap and holds more than this many
+bytes, only this value is counted against
+.B custom_minor_ratio
+and the rest is directly counted against
+.BR custom_major_ratio .
+Note: this only applies to values allocated with
+.B caml_alloc_custom_mem
+(e.g. bigarrays).
+Default: 8192 bytes.
 .TP
 .BR v \ (verbose)
 What GC messages to print to stderr.  This is a sum of values selected
@@ -271,16 +242,7 @@ Computation of compaction-triggering condition.
 
 .BR 0x400
 Output GC statistics at program exit, in the same format as Gc.print_stat.
-.TP
-.BR w \ (window_size)
-Set size of the window used by major GC for smoothing out variations in
-its workload. This is an integer between 1 and 50. (Default: 1)
-.TP
-.BR W
-Print runtime warnings to stderr (such as Channel opened on file dies without
-being closed, unflushed data, etc.)
 
-.RS 0
 The multiplier is
 .BR k ,
 .BR M ,\ or

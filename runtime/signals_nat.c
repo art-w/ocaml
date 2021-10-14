@@ -79,23 +79,14 @@ void caml_garbage_collection(void)
      including allocations combined by Comballoc */
   alloc_len = (unsigned char*)(&d->live_ofs[d->num_live]);
   nallocs = *alloc_len++;
-
-  if (nallocs == 0) {
-    /* This is a poll */
-    caml_process_pending_actions();
+  for (i = 0; i < nallocs; i++) {
+    allocsz += Whsize_wosize(Wosize_encoded_alloc_len(alloc_len[i]));
   }
-  else
-  {
-    for (i = 0; i < nallocs; i++) {
-      allocsz += Whsize_wosize(Wosize_encoded_alloc_len(alloc_len[i]));
-    }
+  /* We have computed whsize (including header), but need wosize (without) */
+  allocsz -= 1;
 
-    /* We have computed whsize (including header), but need wosize (without) */
-    allocsz -= 1;
-
-    caml_alloc_small_dispatch(allocsz, CAML_DO_TRACK | CAML_FROM_CAML,
-                              nallocs, alloc_len);
-  }
+  caml_alloc_small_dispatch(allocsz, CAML_DO_TRACK | CAML_FROM_CAML,
+                            nallocs, alloc_len);
 }
 
 DECLARE_SIGNAL_HANDLER(handle_signal)
@@ -224,11 +215,9 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
 #endif
 #else
     /* Raise a Stack_overflow exception straight from this signal handler */
-#if defined(CONTEXT_YOUNG_PTR)
+#if defined(CONTEXT_YOUNG_PTR) && defined(CONTEXT_EXCEPTION_POINTER)
+    Caml_state->exception_pointer == (char *) CONTEXT_EXCEPTION_POINTER;
     Caml_state->young_ptr = (value *) CONTEXT_YOUNG_PTR;
-#endif
-#if defined(CONTEXT_EXCEPTION_POINTER)
-    Caml_state->exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
 #endif
     caml_raise_stack_overflow();
 #endif

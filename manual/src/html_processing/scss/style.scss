@@ -39,7 +39,7 @@
 
 .api {
     // font-size: 16px;
-    // font-family: $font-sans;
+    // font-family: "Fira Sans", Helvetica, Arial, sans-serif;
     // text-align: left;
     // color: #333;
     // background: #FFFFFF;
@@ -259,7 +259,7 @@
     we restart the sequence there like h2  */
 
        h1, h2, h3, h4, h5, h6, .h7, .h8, .h9, .h10 {
-	font-family: $font-sans;
+	font-family: "Fira Sans", Helvetica, Arial, sans-serif;
 	font-weight: 400;
 	margin: 0.5em 0 0.5em 0;
 	padding-top: 0.1em;
@@ -316,7 +316,7 @@
     /* Preformatted and code */
 
     tt, code, pre {
-	font-family: $font-mono;
+	font-family: "Fira Mono", courier;
 	font-weight: 400;
     }
 
@@ -705,7 +705,7 @@
     span.arrow {
 	font-size: 20px;
 	line-height: 8pt;
-	font-family: $font-mono;
+	font-family: "Fira Mono";
     }
     header dl dd, header dl dt {
 	display: inline-block;
@@ -742,7 +742,7 @@
     }
     
     ul.tutos_menu {
-	font-family: $font-sans;
+	font-family: "Fira Sans";
 	text-align: right;
 	list-style: none;
     }
@@ -756,7 +756,7 @@
     }
 
     span.c003 {
-	font-family: $font-mono;
+	font-family: "Fira Mono", courier;
 	background-color: #f3ece6;
 	border-radius: 6px;
     }
@@ -793,7 +793,8 @@
 
     code span.constructor,
     .caml-input span.kw2 {
-	color: #8d543c;
+	font-weight: 500;
+	color: #a28867;
     }
 
     .caml-input span.numeric {

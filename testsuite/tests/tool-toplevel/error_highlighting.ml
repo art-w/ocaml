@@ -1,8 +1,8 @@
 (* TEST
-   readonly_files = "error_highlighting_use1.ml \
-                     error_highlighting_use2.ml \
-                     error_highlighting_use3.ml \
-                     error_highlighting_use4.ml"
+   files = "error_highlighting_use1.ml \
+            error_highlighting_use2.ml \
+            error_highlighting_use3.ml \
+            error_highlighting_use4.ml"
    * toplevel
 *)
 

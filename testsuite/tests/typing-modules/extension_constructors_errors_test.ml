@@ -21,7 +21,7 @@ Error: Signature mismatch:
          type t += F
        Constructors do not match:
          F of int
-       is not the same as:
+       is not compatible with:
          F
        They have different arities.
 |}];;
@@ -40,22 +40,5 @@ Error: Signature mismatch:
          type t += private A
        is not included in
          type t += A
-       Private extension constructor(s) would be revealed.
-|}];;
-
-module M2 : sig type t += A end = struct type t += private A | B end;;
-[%%expect{|
-Line 1, characters 34-68:
-1 | module M2 : sig type t += A end = struct type t += private A | B end;;
-                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Signature mismatch:
-       Modules do not match:
-         sig type t += private A | B  end
-       is not included in
-         sig type t += A end
-       Extension declarations do not match:
-         type t += private A
-       is not included in
-         type t += A
-       Private extension constructor(s) would be revealed.
+       A private type would be revealed.
 |}];;

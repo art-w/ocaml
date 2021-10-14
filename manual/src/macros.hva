@@ -160,7 +160,7 @@
 %%% Code examples
 \newcommand{\input@color}{\htmlcolor{006000}}
 \newcommand{\output@color}{\maroon}
-\newcommand{\machine}{\@span{class=machine}\tt}
+\newcommand{\machine}{\tt}
 \newenvironment{machineenv}{\begin{alltt}}{\end{alltt}}
 \newcommand{\var}[1]{\textit{#1}}
 
@@ -180,8 +180,6 @@
 \newcommand{\ocamlcomment}{\@span{class="ocamlcomment"}}
 \newcommand{\ocamlstring}{\@span{class="ocamlstring"}}
 
-\newcommand{\?}{\@span{class=ocamlprompt}\#}
-\newstyle{.ocamlprompt}{color:black;}
 
 %%% End of code example
 
@@ -193,9 +191,8 @@
 
 
 %%venant de macros.tex
-\newcommand{\osvariant}{\@span{class=osvariant}}
-\newstyle{.osvariant}{font-family:sans-serif}
-\def\versionspecific#1{\begin{quote}{\osvariant{}#1:}\quad}
+
+\def\versionspecific#1{\begin{quote}\textsf{#1:}\quad}
 \def\unix{\versionspecific{Unix}}
 \def\endunix{\end{quote}}
 \def\windows{\versionspecific{Windows}}
@@ -255,8 +252,7 @@
 \def\ikwd#1{\indexentry{\jobname.kwd}{#1}}
 % nth
 
-\def\th{^{\mbox{\@span{class=th}th}}}
-\newstyle{.th}{font-size:small;}
+\def\th{^{\mbox{\scriptsize th}}}
 \renewcommand{\hbox}[1]{\mbox{#1}}
 
 % Notations pour les metavariables
@@ -286,33 +282,12 @@
 
 \newenvironment{linklist}{\begin{links}}{\end{links}}
 
-\ifocamldoc
 \newcommand{\moduleref}[3]{\ahref{#1/#2.html}{#3}}
 \newcommand{\stdmoduleref}[1]{\moduleref{libref}{#1}{\texttt{#1}}}
-\else
-\newcommand{\moduleref}[3]{\ahref{#1/#2/index.html}{#3}}
-\newcommand{\stdmoduleref}[1]{\moduleref{libref}{Stdlib/#1}{\texttt{#1}}}
-\fi
+
 \newcommand{\docitem}[3]{\item \moduleref{#1}{#2}{Module \texttt{#2}}: #3}
-\newcommand{\libdocitem}[2]{\docitem{libref}{#1}{#2}}
+\newcommand{\stddocitem}[2]{\docitem{libref}{#1}{#2}}
 \newcommand{\compilerdocitem}[2]{\docitem{compilerlibref}{#1}{#2}}
 
 %%% Missing macro
 \newcommand{\DeclareUnicodeCharacter}[2]{}
-\newcommand{\DisableLigatures}[1]{}
-
-\ifocamldoc
-\newcommand{\stddocitem}[2]{\libdocitem{#1}{#2}}
-\else
-\newcommand{\stddocitem}[2]{\docitem{libref/Stdlib}{#1}{#2}}
-\fi
-
-\renewcommand{\tt}{\@span{class=font-tt}}
-\newstyle{.font-tt}{font-family:monospace;}
-\renewcommand{\it}{\@span{class=font-it}}
-\newstyle{.font-it}{font-style:italic;}
-\renewcommand{\bf}{\@span{class=font-bold}}
-\newstyle{.font-bold}{font-weight:bold;}
-\renewcommand{\sl}{\ifmath\ifmathml\@span{class='sl-math'}%
-\else\@span{class="font-sl"}\fi\else\@span{class="font-sl"}\fi}
-\newstyle{.font-sl}{font-style:oblique;}

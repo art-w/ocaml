@@ -1,6 +1,6 @@
 (* TEST
 
-readonly_files = "myecho.ml"
+files = "myecho.ml"
 
 * setup-ocamlc.byte-build-env
 program = "${test_build_directory}/quotecommand.byte"

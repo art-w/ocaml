@@ -104,8 +104,8 @@ module Signature_search =
       type_expr
 
     let search_method_type name class_sig =
-      let (_, _, type_expr) = Types.Meths.find name class_sig.Types.csig_meths in
-      type_expr
+      let fields = Odoc_misc.get_fields class_sig.Types.csig_self in
+      List.assoc name fields
   end
 
 module type Info_retriever =
@@ -341,7 +341,7 @@ module Analyser =
 
 
     let manifest_structure env name_comment_list type_expr =
-      match get_desc type_expr with
+      match type_expr.desc with
       | Tobject (fields, _) ->
         let f (field_name, _, type_expr) =
           let comment_opt =
@@ -373,7 +373,7 @@ module Analyser =
       match type_kind with
         Types.Type_abstract ->
           Odoc_type.Type_abstract
-      | Types.Type_variant (l,_) ->
+      | Types.Type_variant l ->
           let f {Types.cd_id=constructor_name;cd_args;cd_res=ret_type} =
             let constructor_name = Ident.name constructor_name in
             let comment_opt =

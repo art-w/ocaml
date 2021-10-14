@@ -231,7 +231,7 @@ let first_column simplified_matrix =
 *)
 
 
-let is_absent tag row = row_field tag !row = Rabsent
+let is_absent tag row = Btype.row_field tag !row = Rabsent
 
 let is_absent_pat d =
   match d.pat_desc with
@@ -339,12 +339,12 @@ exception Empty (* Empty pattern *)
 
 (* May need a clean copy, cf. PR#4745 *)
 let clean_copy ty =
-  if get_level ty = Btype.generic_level then ty
+  if ty.level = Btype.generic_level then ty
   else Subst.type_expr Subst.identity ty
 
 let get_constructor_type_path ty tenv =
-  let ty = Ctype.expand_head tenv (clean_copy ty) in
-  match get_desc ty with
+  let ty = Ctype.repr (Ctype.expand_head tenv (clean_copy ty)) in
+  match ty.desc with
   | Tconstr (path,_,_) -> path
   | _ -> assert false
 
@@ -717,26 +717,23 @@ let mark_partial =
   )
 
 let close_variant env row =
-  let Row {fields; more; name=orig_name; closed; fixed} = row_repr row in
-  let name, static =
+  let row = Btype.row_repr row in
+  let nm =
     List.fold_left
-      (fun (nm, static) (_tag,f) ->
-        match row_field_repr f with
+      (fun nm (_tag,f) ->
+        match Btype.row_field_repr f with
         | Reither(_, _, false, e) ->
             (* m=false means that this tag is not explicitly matched *)
-            set_row_field e Rabsent;
-            (None, static)
-        | Reither (_, _, true, _) -> (nm, false)
-        | Rabsent | Rpresent _ -> (nm, static))
-      (orig_name, true) fields in
-  if not closed || name != orig_name then begin
-    let more' = if static then Btype.newgenty Tnil else Btype.newgenvar () in
+            Btype.set_row_field e Rabsent;
+            None
+        | Rabsent | Reither (_, _, true, _) | Rpresent _ -> nm)
+      row.row_name row.row_fields in
+  if not row.row_closed || nm != row.row_name then begin
     (* this unification cannot fail *)
-    Ctype.unify env more
+    Ctype.unify env row.row_more
       (Btype.newgenty
-         (Tvariant
-            (create_row ~fields:[] ~more:more'
-               ~closed:true ~name ~fixed)))
+         (Tvariant {row with row_fields = []; row_more = Btype.newgenvar();
+                    row_closed = true; row_name = nm}))
   end
 
 (*
@@ -762,22 +759,22 @@ let full_match closing env =  match env with
           env
       in
       let row = type_row () in
-      if closing && not (Btype.has_fixed_explanation row) then
+      if closing && not (Btype.row_fixed row) then
         (* closing=true, we are considering the variant as closed *)
         List.for_all
           (fun (tag,f) ->
-            match row_field_repr f with
+            match Btype.row_field_repr f with
               Rabsent | Reither(_, _, false, _) -> true
             | Reither (_, _, true, _)
                 (* m=true, do not discard matched tags, rather warn *)
             | Rpresent _ -> List.mem tag fields)
-          (row_fields row)
+          row.row_fields
       else
-        row_closed row &&
+        row.row_closed &&
         List.for_all
           (fun (tag,f) ->
-            row_field_repr f = Rabsent || List.mem tag fields)
-          (row_fields row)
+            Btype.row_field_repr f = Rabsent || List.mem tag fields)
+          row.row_fields
   | Constant Const_char _ ->
       List.length env = 256
   | Constant _
@@ -804,6 +801,35 @@ let should_extend ext env = match ext with
       end
 end
 
+module ConstructorTagHashtbl = Hashtbl.Make(
+  struct
+    type t = Types.constructor_tag
+    let hash = Hashtbl.hash
+    let equal = Types.equal_tag
+  end
+)
+
+(* complement constructor tags *)
+let complete_tags nconsts nconstrs tags =
+  let seen_const = Array.make nconsts false
+  and seen_constr = Array.make nconstrs false in
+  List.iter
+    (function
+      | Cstr_constant i -> seen_const.(i) <- true
+      | Cstr_block i -> seen_constr.(i) <- true
+      | _  -> assert false)
+    tags ;
+  let r = ConstructorTagHashtbl.create (nconsts+nconstrs) in
+  for i = 0 to nconsts-1 do
+    if not seen_const.(i) then
+      ConstructorTagHashtbl.add r (Cstr_constant i) ()
+  done ;
+  for i = 0 to nconstrs-1 do
+    if not seen_constr.(i) then
+      ConstructorTagHashtbl.add r (Cstr_block i) ()
+  done ;
+  r
+
 (* build a pattern from a constructor description *)
 let pat_of_constr ex_pat cstr =
   {ex_pat with pat_desc =
@@ -825,33 +851,36 @@ let pat_of_constrs ex_pat cstrs =
 
 let pats_of_type ?(always=false) env ty =
   let ty' = Ctype.expand_head env ty in
-  match get_desc ty' with
+  match ty'.desc with
   | Tconstr (path, _, _) ->
-      begin match Env.find_type_descrs path env with
-      | exception Not_found -> [omega]
-      | Type_variant (cstrs,_) when always || List.length cstrs <= 1 ||
+      begin try match (Env.find_type path env).type_kind with
+      | Type_variant cl when always || List.length cl <= 1 ||
         (* Only explode when all constructors are GADTs *)
-        List.for_all (fun cd -> cd.cstr_generalized) cstrs ->
+        List.for_all (fun cd -> cd.Types.cd_res <> None) cl ->
+          let cstrs = fst (Env.find_type_descrs path env) in
           List.map (pat_of_constr (make_pat Tpat_any ty env)) cstrs
-      | Type_record (labels, _) ->
+      | Type_record _ ->
+          let labels = snd (Env.find_type_descrs path env) in
           let fields =
             List.map (fun ld ->
               mknoloc (Longident.Lident ld.lbl_name), ld, omega)
               labels
           in
           [make_pat (Tpat_record (fields, Closed)) ty env]
-      | Type_variant _ | Type_abstract | Type_open -> [omega]
+      | _ -> [omega]
+      with Not_found -> [omega]
       end
   | Ttuple tl ->
       [make_pat (Tpat_tuple (omegas (List.length tl))) ty env]
   | _ -> [omega]
 
 let rec get_variant_constructors env ty =
-  match get_desc ty with
+  match (Ctype.repr ty).desc with
   | Tconstr (path,_,_) -> begin
-      try match Env.find_type path env, Env.find_type_descrs path env with
-      | _, Type_variant (cstrs,_) -> cstrs
-      | {type_manifest = Some _}, _ ->
+      try match Env.find_type path env with
+      | {type_kind=Type_variant _} ->
+          fst (Env.find_type_descrs path env)
+      | {type_manifest = Some _} ->
           get_variant_constructors env
             (Ctype.expand_head_once env (clean_copy ty))
       | _ -> fatal_error "Parmatch.get_variant_constructors"
@@ -860,21 +889,15 @@ let rec get_variant_constructors env ty =
     end
   | _ -> fatal_error "Parmatch.get_variant_constructors"
 
-module ConstructorSet = Set.Make(struct
-  type t = constructor_description
-  let compare c1 c2 = String.compare c1.cstr_name c2.cstr_name
-end)
-
-(* Sends back a pattern that complements the given constructors used_constrs *)
-let complete_constrs constr used_constrs =
+(* Sends back a pattern that complements constructor tags all_tag *)
+let complete_constrs constr all_tags =
   let c = constr.pat_desc in
+  let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
   let constrs = get_variant_constructors constr.pat_env c.cstr_res in
-  let used_constrs = ConstructorSet.of_list used_constrs in
   let others =
     List.filter
-      (fun cnstr -> not (ConstructorSet.mem cnstr used_constrs))
+      (fun cnstr -> ConstructorTagHashtbl.mem not_tags cnstr.cstr_tag)
       constrs in
-  (* Split constructors to put constant ones first *)
   let const, nonconst =
     List.partition (fun cnstr -> cnstr.cstr_arity = 0) others in
   const @ nonconst
@@ -882,16 +905,14 @@ let complete_constrs constr used_constrs =
 let build_other_constrs env p =
   let open Patterns.Head in
   match p.pat_desc with
-  | Construct ({ cstr_tag = Cstr_extension _ }) -> extra_pat
-  | Construct
-      ({ cstr_tag = Cstr_constant _ | Cstr_block _ | Cstr_unboxed } as c) ->
-        let constr = { p with pat_desc = c } in
-        let get_constr q =
-          match q.pat_desc with
-          | Construct c -> c
-          | _ -> fatal_error "Parmatch.get_constr" in
-        let used_constrs =  List.map (fun (p,_) -> get_constr p) env in
-        pat_of_constrs p (complete_constrs constr used_constrs)
+  | Construct ({ cstr_tag = Cstr_constant _ | Cstr_block _ } as c) ->
+      let constr = { p with pat_desc = c } in
+      let get_tag q =
+        match q.pat_desc with
+        | Construct c -> c.cstr_tag
+        | _ -> fatal_error "Parmatch.get_tag" in
+      let all_tags =  List.map (fun (p,_) -> get_tag p) env in
+      pat_of_constrs p (complete_constrs constr all_tags)
   | _ -> extra_pat
 
 (* Auxiliary for build_other *)
@@ -952,16 +973,16 @@ let build_other ext env =
               List.fold_left
                 (fun others (tag,f) ->
                   if List.mem tag tags then others else
-                  match row_field_repr f with
+                  match Btype.row_field_repr f with
                     Rabsent (* | Reither _ *) -> others
                   (* This one is called after erasing pattern info *)
                   | Reither (c, _, _, _) -> make_other_pat tag c :: others
                   | Rpresent arg -> make_other_pat tag (arg = None) :: others)
-                [] (row_fields row)
+                [] row.row_fields
             with
               [] ->
                 let tag =
-                  if Btype.has_fixed_explanation row then some_private_tag else
+                  if Btype.row_fixed row then some_private_tag else
                   let rec mktag tag =
                     if List.mem tag tags then mktag (tag ^ "'") else tag in
                   mktag "AnyOtherTag"
@@ -1437,7 +1458,7 @@ let rec pressure_variants tdefs = function
                 match d.pat_desc with
                 | Variant { type_row; _ } ->
                   let row = type_row () in
-                  if Btype.has_fixed_explanation row
+                  if Btype.row_fixed row
                   || pressure_variants None default then ()
                   else close_variant env row
                 | _ -> ()

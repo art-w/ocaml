@@ -25,6 +25,7 @@ OCAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 OCAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 OCAMLDEP = $(BEST_OCAMLDEP)
 DEPFLAGS = -slash
+OCAMLLEX ?= $(BEST_OCAMLLEX)
 
 # For installation
 ##############
@@ -74,7 +75,7 @@ INCLUDES_NODEP=\
 DEPINCLUDES=$(INCLUDES_DEP)
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
+COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
   -safe-string -strict-sequence -strict-formats -bin-annot -principal
 
 LINKFLAGS=$(INCLUDES) -nostdlib
@@ -206,16 +207,18 @@ DEPEND_PREREQS = $(LEXERS:.mll=.ml) \
 # generic rules :
 #################
 
-%.cmo: %.ml
+.SUFFIXES: .ml .mli .cmo .cmi .cmx .cmxs
+
+.ml.cmo:
 	$(OCAMLC) $(COMPFLAGS) -c $<
 
-%.cmi: %.mli
+.mli.cmi:
 	$(OCAMLC)  $(COMPFLAGS) -c $<
 
-%.cmx: %.ml
+.ml.cmx:
 	$(OCAMLOPT) $(COMPFLAGS) -c $<
 
-%.cmxs: %.ml
+.ml.cmxs:
 	$(OCAMLOPT_CMD) -shared -o $@ $(COMPFLAGS) $<
 
 # Installation targets
@@ -323,6 +326,8 @@ test_texi:
 
 # stdlib non-prefixed :
 #######################
+SRC=$(ROOTDIR)
+
 
 .PHONY: autotest_stdlib
 autotest_stdlib:
@@ -332,6 +337,43 @@ autotest_stdlib:
 	$(ROOTDIR)/stdlib/*.mli \
 	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
 	$(ROOTDIR)/otherlibs/str/str.mli
+
+# odoc rules :
+##############
+
+.PHONY: odoc
+odoc:
+	rm -rf odoc
+	$(MKDIR) odoc
+	# .cmti --> .odoc
+	for fn in $(ROOTDIR)/stdlib/stdlib*.cmti; do \
+	  odoc compile $(INCLUDES) --package stdlib $(ROOTDIR)/stdlib/$$fn; \
+	done
+	for lib in str bigarray; do \
+	  odoc compile $(INCLUDES) --package $$lib $(ROOTDIR)/otherlibs/$$lib/$$lib.cmti; \
+	done
+	odoc compile $(INCLUDES) --package unix $(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.cmti
+	for fn in $(ROOTDIR)/parsing/*.cmti; do \
+	  odoc compile $(INCLUDES) --package parsing $(ROOTDIR)/parsing/$$fn; \
+	done
+	# .odoc --> .html
+	odoc html $(INCLUDES) --output-dir odoc $(ROOTDIR)/stdlib/stdlib.odoc
+	for lib in str bigarray $(UNIXLIB); do \
+	  odoc html $(INCLUDES) --output-dir odoc $(ROOTDIR)/otherlibs/$$lib/$$lib.odoc; \
+	done
+	for fn in $(ROOTDIR)/parsing/*.odoc; do \
+	  odoc html $(INCLUDES) --output-dir odoc $$fn; \
+	done
+	for d in odoc/*; do \
+	  lib=`basename $$d`; \
+	  cd $$d; \
+	  echo -e The $$lib 'library.\n\nModules\n:{!modules:' * '}' > ../../index.mld; \
+	  cd ../..; \
+	  odoc html $(INCLUDES) --output-dir odoc --index-for=$$lib index.mld; \
+	  rm -f index.mld; \
+	done
+	cp odoc_index.html odoc/index.html
+	odoc css -o odoc
 
 # backup, clean and depend :
 ############################

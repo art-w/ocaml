@@ -3,7 +3,7 @@
 modules = "tscanf2_io.ml"
 * hasunix
 include unix
-readonly_files = "tscanf2_worker.ml"
+files = "tscanf2_worker.ml"
 reference = "${test_source_directory}/tscanf2.reference"
 
 (* The bytcode test *)

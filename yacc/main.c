@@ -22,7 +22,7 @@
 #include <unistd.h>
 #endif
 
-#include "caml/version.h"
+#include "version.h"
 
 char lflag;
 char rflag;
@@ -183,10 +183,10 @@ void getargs(int argc, char_os **argv)
         case 'v':
             if (!strcmp_os (argv[i], T("-version"))){
               printf ("The OCaml parser generator, version "
-                      OCAML_VERSION_STRING "\n");
+                      OCAML_VERSION "\n");
               exit (0);
             }else if (!strcmp_os (argv[i], T("-vnum"))){
-              printf (OCAML_VERSION_STRING "\n");
+              printf (OCAML_VERSION "\n");
               exit (0);
             }else{
               vflag = 1;
@@ -420,7 +420,11 @@ void open_files(void)
       open_error(interface_file_name);
 }
 
-int main_os(int argc, char_os **argv)
+#ifdef _WIN32
+int wmain(int argc, wchar_t **argv)
+#else
+int main(int argc, char **argv)
+#endif
 {
     set_signals();
     getargs(argc, argv);

@@ -1,7 +1,7 @@
 (* TEST
 
 script = "sh ${test_source_directory}/check-linker-version.sh"
-readonly_files = "mylib.mli mylib.ml stack_walker.c"
+files = "mylib.mli mylib.ml stack_walker.c"
 
 * macos
 ** arch_amd64

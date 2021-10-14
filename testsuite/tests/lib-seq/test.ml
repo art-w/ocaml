@@ -35,11 +35,4 @@ let () =
   ()
 ;;
 
-(* concat *)
-let () =
-  assert (
-      List.concat [[1]; []; [2; 3];]
-      = (let (!?) = List.to_seq in
-         List.of_seq (Seq.concat !?[!?[1]; !?[]; !?[2; 3]])))
-
 let () = print_endline "OK";;

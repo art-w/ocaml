@@ -1,6 +1,6 @@
 (* TEST
 
-readonly_files = "first_arg_fail.txt last_arg_fail.txt"
+files = "first_arg_fail.txt last_arg_fail.txt"
 
 * setup-ocaml-build-env
 

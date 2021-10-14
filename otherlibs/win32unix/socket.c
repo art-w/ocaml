@@ -35,6 +35,9 @@ CAMLprim value unix_socket(value cloexec, value domain, value type, value proto)
     win32_maperr(WSAGetLastError());
     uerror("socket", Nothing);
   }
-  win_set_cloexec((HANDLE) s, cloexec);
+  /* This is a best effort, not guaranteed to work, so don't fail on error */
+  SetHandleInformation((HANDLE) s,
+                       HANDLE_FLAG_INHERIT,
+                       unix_cloexec_p(cloexec) ? 0 : HANDLE_FLAG_INHERIT);
   return win_alloc_socket(s);
 }

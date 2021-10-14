@@ -156,7 +156,7 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
     else Closure_middle_end.lambda_to_clambda
   in
   Asmgen.compile_implementation ~toplevel:need_symbol
-    ~backend ~prefixname:filename
+    ~backend ~filename ~prefixname:filename
     ~middle_end ~ppf_dump:ppf program;
   Asmlink.call_linker_shared [filename ^ ext_obj] dll;
   Sys.remove (filename ^ ext_obj);
@@ -279,7 +279,34 @@ let execute_phrase print_outcome ppf phr =
         toplevel_env := oldenv; raise x
       end
   | Ptop_dir {pdir_name = {Location.txt = dir_name}; pdir_arg } ->
-      try_run_directive ppf dir_name pdir_arg
+      begin match get_directive dir_name with
+      | None ->
+          fprintf ppf "Unknown directive `%s'.@." dir_name;
+          false
+      | Some d ->
+          match d, pdir_arg with
+          | Directive_none f, None -> f (); true
+          | Directive_string f, Some {pdira_desc = Pdir_string s} -> f s; true
+          | Directive_int f, Some {pdira_desc = Pdir_int (n,None)} ->
+             begin match Int_literal_converter.int n with
+             | n -> f n; true
+             | exception _ ->
+               fprintf ppf "Integer literal exceeds the range of \
+                            representable integers for directive `%s'.@."
+                       dir_name;
+               false
+             end
+          | Directive_int _, Some {pdira_desc = Pdir_int (_, Some _)} ->
+              fprintf ppf "Wrong integer literal for directive `%s'.@."
+                dir_name;
+              false
+          | Directive_ident f, Some {pdira_desc = Pdir_ident lid} -> f lid; true
+          | Directive_bool f, Some {pdira_desc = Pdir_bool b} -> f b; true
+          | _ ->
+              fprintf ppf "Wrong type of argument for directive `%s'.@."
+                dir_name;
+              false
+      end
 
 
 (* API compat *)

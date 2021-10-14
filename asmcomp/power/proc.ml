@@ -92,8 +92,6 @@ let stack_slot slot ty =
 
 (* Calling conventions *)
 
-let size_domainstate_args = 64 * size_int
-
 let loc_int last_int make_stack reg_use_stack int ofs =
   if !int <= last_int then begin
     let l = phys_reg !int in
@@ -138,12 +136,12 @@ let loc_int_pair last_int make_stack int ofs =
     [| stack_lower; stack_upper |]
   end
 
-let calling_conventions first_int last_int first_float last_float
-      make_stack first_stack arg =
+let calling_conventions first_int last_int first_float last_float make_stack
+      arg =
   let loc = Array.make (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
-  let ofs = ref first_stack in
+  let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i) with
     | Val | Int | Addr ->
@@ -151,30 +149,23 @@ let calling_conventions first_int last_int first_float last_float
     | Float ->
         loc.(i) <- loc_float last_float make_stack false int float ofs
   done;
-  (loc, Misc.align (max 0 !ofs) 16)  (* keep stack 16-aligned *)
+  (loc, Misc.align !ofs 16)  (* keep stack 16-aligned *)
 
-let incoming ofs =
-  if ofs >= 0
-  then Incoming ofs
-  else Domainstate (ofs + size_domainstate_args)
-let outgoing ofs =
-  if ofs >= 0
-  then Outgoing ofs
-  else Domainstate (ofs + size_domainstate_args)
+let incoming ofs = Incoming ofs
+let outgoing ofs = Outgoing ofs
 let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
-let max_arguments_for_tailcalls = 16 (* in regs *) + 64 (* in domain state *)
+let max_arguments_for_tailcalls = 8
 
 let loc_arguments arg =
-    calling_conventions 0 15 100 112 outgoing (- size_domainstate_args) arg
+    calling_conventions 0 7 100 112 outgoing arg
 
 let loc_parameters arg =
-  let (loc, _ofs) =
-    calling_conventions 0 15 100 112 incoming (- size_domainstate_args) arg
+  let (loc, _ofs) = calling_conventions 0 7 100 112 incoming arg
   in loc
 
 let loc_results res =
-  let (loc, _ofs) = calling_conventions 0 15 100 112 not_supported 0 res
+  let (loc, _ofs) = calling_conventions 0 7 100 112 not_supported res
   in loc
 
 (* C calling conventions for ELF32:
@@ -253,7 +244,7 @@ let loc_external_arguments ty_args =
 (* Results are in GPR 3 and FPR 1 *)
 
 let loc_external_results res =
-  let (loc, _ofs) = calling_conventions 0 1 100 100 not_supported 0 res
+  let (loc, _ofs) = calling_conventions 0 1 100 100 not_supported res
   in loc
 
 (* Exceptions are in GPR 3 *)
@@ -327,6 +318,17 @@ let safe_register_pressure = function
 let max_register_pressure = function
     Iextcall _ -> [| 14; 18 |]
   | _ -> [| 23; 30 |]
+
+(* Pure operations (without any side effect besides updating their result
+   registers). *)
+
+let op_is_pure = function
+  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | Ispecific(Imultaddf | Imultsubf) -> true
+  | Ispecific _ -> false
+  | _ -> true
 
 (* Layout of the stack *)
 

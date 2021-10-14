@@ -2,7 +2,7 @@
    modules = "calc_parser.mly calc_lexer.mll"
    ocamllex_flags = " -q "
    ocamlyacc_flags = " -q "
-   readonly_files = "calc_input.txt"
+   files = "calc_input.txt"
    stdin = "calc_input.txt"
 *)
 let _ =

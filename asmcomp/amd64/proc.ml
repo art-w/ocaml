@@ -71,10 +71,12 @@ let win64 = Arch.win64
        3. C callee-saved registers.
      This translates to the set { r10, r11 }.  These registers hence cannot
      be used for OCaml parameter passing and must also be marked as
-     destroyed across [Ialloc] and [Ipoll] (otherwise a call to
-     caml_call_gc@PLT might clobber these two registers before the assembly
-     stub saves them into the GC regs block).
+     destroyed across [Ialloc] (otherwise a call to caml_call_gc@PLT might
+     clobber these two registers before the assembly stub saves them into
+     the GC regs block).
 *)
+
+let max_arguments_for_tailcalls = 10
 
 let int_reg_name =
   match Config.ccomp_type with
@@ -155,15 +157,12 @@ let word_addressed = false
 
 (* Calling conventions *)
 
-let size_domainstate_args = 64 * size_int
-
-let calling_conventions first_int last_int first_float last_float
-                        make_stack first_stack
+let calling_conventions first_int last_int first_float last_float make_stack
                         arg =
   let loc = Array.make (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
-  let ofs = ref first_stack in
+  let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i) with
     | Val | Int | Addr as ty ->
@@ -184,29 +183,21 @@ let calling_conventions first_int last_int first_float last_float
           ofs := !ofs + size_float
         end
   done;
-  (loc, Misc.align (max 0 !ofs) 16)  (* keep stack 16-aligned *)
+  (loc, Misc.align !ofs 16)  (* keep stack 16-aligned *)
 
-let incoming ofs =
-  if ofs >= 0
-  then Incoming ofs
-  else Domainstate (ofs + size_domainstate_args)
-let outgoing ofs =
-  if ofs >= 0
-  then Outgoing ofs
-  else Domainstate (ofs + size_domainstate_args)
+let incoming ofs = Incoming ofs
+let outgoing ofs = Outgoing ofs
 let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
 let loc_arguments arg =
-  calling_conventions 0 9 100 109 outgoing (- size_domainstate_args) arg
+  calling_conventions 0 9 100 109 outgoing arg
 let loc_parameters arg =
   let (loc, _ofs) =
-    calling_conventions 0 9 100 109 incoming (- size_domainstate_args) arg
-  in loc
+    calling_conventions 0 9 100 109 incoming arg
+  in
+  loc
 let loc_results res =
-  let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported 0 res
-  in loc
-
-let max_arguments_for_tailcalls = 10 (* in regs *) + 64 (* in domain state *)
+  let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported res in loc
 
 (* C calling conventions under Unix:
      first integer args in rdi, rsi, rdx, rcx, r8, r9
@@ -222,10 +213,10 @@ let max_arguments_for_tailcalls = 10 (* in regs *) + 64 (* in domain state *)
      Return value in rax or xmm0. *)
 
 let loc_external_results res =
-  let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported 0 res in loc
+  let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported res in loc
 
 let unix_loc_external_arguments arg =
-  calling_conventions 2 7 100 107 outgoing 0 arg
+  calling_conventions 2 7 100 107 outgoing arg
 
 let win64_int_external_arguments =
   [| 5 (*rcx*); 4 (*rdx*); 6 (*r8*); 7 (*r9*) |]
@@ -303,7 +294,7 @@ let destroyed_at_c_call =
        100;101;102;103;104;105;106;107;
        108;109;110;111;112;113;114;115])
 
-let destroyed_at_alloc_or_poll =
+let destroyed_at_alloc =
   if X86_proc.use_plt then
     destroyed_by_plt_stub
   else
@@ -316,7 +307,7 @@ let destroyed_at_oper = function
   | Iop(Iintop(Idiv | Imod)) | Iop(Iintop_imm((Idiv | Imod), _))
         -> [| rax; rdx |]
   | Iop(Istore(Single, _, _)) -> [| rxmm15 |]
-  | Iop(Ialloc _ | Ipoll _) -> destroyed_at_alloc_or_poll
+  | Iop(Ialloc _) -> destroyed_at_alloc
   | Iop(Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
   | Iswitch(_, _) -> [| rax; rdx |]
@@ -348,7 +339,7 @@ let max_register_pressure = function
         if fp then [| 3; 0 |] else  [| 4; 0 |]
   | Iintop(Idiv | Imod) | Iintop_imm((Idiv | Imod), _) ->
     if fp then [| 10; 16 |] else [| 11; 16 |]
-  | Ialloc _ | Ipoll _ ->
+  | Ialloc _ ->
     if fp then [| 11 - num_destroyed_by_plt_stub; 16 |]
     else [| 12 - num_destroyed_by_plt_stub; 16 |]
   | Iintop(Icomp _) | Iintop_imm((Icomp _), _) ->
@@ -356,6 +347,17 @@ let max_register_pressure = function
   | Istore(Single, _, _) ->
     if fp then [| 12; 15 |] else [| 13; 15 |]
   | _ -> if fp then [| 12; 16 |] else [| 13; 16 |]
+
+(* Pure operations (without any side effect besides updating their result
+   registers). *)
+
+let op_is_pure = function
+  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | Ispecific(Ilea _|Isextend32|Izextend32) -> true
+  | Ispecific _ -> false
+  | _ -> true
 
 (* Layout of the stack frame *)
 

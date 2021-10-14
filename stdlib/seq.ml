@@ -50,17 +50,16 @@ let rec filter f seq () = match seq() with
       then Cons (x, filter f next)
       else filter f next ()
 
-let rec concat seq () = match seq () with
-  | Nil -> Nil
-  | Cons (x, next) ->
-     append x (concat next) ()
-
 let rec flat_map f seq () = match seq () with
   | Nil -> Nil
   | Cons (x, next) ->
-    append (f x) (flat_map f next) ()
+    flat_map_app f (f x) next ()
 
-let concat_map = flat_map
+(* this is [append seq (flat_map f tail)] *)
+and flat_map_app f seq tail () = match seq () with
+  | Nil -> flat_map f tail ()
+  | Cons (x, next) ->
+    Cons (x, flat_map_app f next tail)
 
 let fold_left f acc seq =
   let rec aux f acc seq = match seq () with

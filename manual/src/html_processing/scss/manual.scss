@@ -16,14 +16,14 @@
 	float:left;
 	color:#777;
 	cursor: context-menu;
-	font-family: $font-sans;
+	font-family:"Fira Sans",Helvetica,Arial,sans-serif;
 	span{ /* menu icon */
 	    font-size:22px;
 	    margin-right:1ex;
 	}
     }
     ul{list-style:none;}
-    ul.itemize li::before{@include disc;}
+    ul.itemize li::before{@include caret;}
 
     /* When the TOC is repeated in the main content */
     ul.ul-content {
@@ -48,22 +48,19 @@
 	    span {
 		color:#c88b5f;
 	    }
-	    span.syntax-token{
+	    span.c003{
 		color:#564233;
 	    }
 	}
     }
     /* only for Contents/Foreword in index.html: */
-    ul.ul-content li::before{
-	@include disc;
-	margin-left: 0;
-    }
+    ul.ul-content li::before{@include caret;}
     /* table of contents: (manual.001.html): */
     ul.toc ul.toc ul.toc{
 	font-size:smaller;
     }
     section>ul>li>a{ /* for Parts title */
-	font-family: $font-sans;
+	font-family:"Fira Sans",Helvetica,Arial,sans-serif;
 	font-size:larger;
 	background:linear-gradient(to left,#fff 0,#ede8e5 100%);
     }
@@ -143,7 +140,7 @@ a.section-anchor{
     color:#d5d5d5
 }
 .h10,.h7,.h8,.h9,h1,h2,h3,h4,h5,h6{
-    font-family: $font-sans;
+    font-family:"Fira Sans",Helvetica,Arial,sans-serif;
     font-weight:400;
     margin:.5em 0 .5em 0;
     padding-top:.1em;
@@ -185,11 +182,8 @@ h3 code{
 h4{
     font-size:1.12em
 }
-h2, h3, h4, h5 {
-	font-weight: 500;
-}
 .ocaml,.pre,code,pre,tt{
-    font-family: $font-mono;
+    font-family:"Fira Mono",courier;
     font-weight:400
 }
 .pre,pre{
@@ -256,7 +250,8 @@ code.caml-output.ok,div.caml-output.ok{
     color:#045804
 }
 code.caml-output.error,div.caml-output.error{
-    color:#ff4500
+    color:#ff4500;
+    white-space:normal
 }
 .chapter span,.tutorial span,.maintitle h1 span{
     color:$logocolor
@@ -265,13 +260,14 @@ h1 span{
     color: #d28853;
 }
 blockquote.quote{
+    margin:0;
     /*font-size: smaller;*/
     hr{
 	display:none;
     }
 }
 #part-menu{
-    font-family: $font-sans;
+    font-family:"Fira Sans";
     text-align:right;
     list-style:none;
     overflow-y:hidden;
@@ -279,77 +275,37 @@ blockquote.quote{
 }
 #part-menu li.active a{
     color:#000;
-    &::before{@include diamond}
+    &::before{@include caret;}
 }
-.center {
-	text-align: center;
-	margin-left: auto;
-	margin-right: auto;
-}
-.display {
-	margin: 0 auto;
-}
-.c001 {
-	border-spacing: 6px;
-	border-collapse: separate;
-}
-span.syntax-token{
+span.c003{
     color:#564233;
-    font-family: $font-mono;
+    font-family:"Fira Mono",courier;
+    background-color:#f3ece6;
     border-radius:6px
 }
 div.caml-example.toplevel code.caml-input::before,
 div.caml-example.toplevel div.caml-input::before{
-    /* content:"#"; */ /* pre-4.11 */
+    content:"#";
     color:#888
 }
-span.number{
-    padding-right: 1ex;
-}
-span.syntax-token {
-	font-family: $font-mono;
-}
-span.syntax-token {
-	color: rgba(91, 33, 6, 0.87);
-}
-span.ocamlprompt{
+span.c004{
     color:#888
 }
-span.font-bold .machine{
+span.c006{
     font-weight:700;
     color:#564233;
+    font-family:"Fira Mono",courier;
 }
-.osvariant {
-	font-family: $font-sans;
-}
-.font-it {
-	font-style: italic;
-}
-.font-tt {
-	font-family: $font-mono;
-}
-span.authors{
+span.c009{
     font-style:italic;
+    background-color:#f3ece6;
+    border-radius:6px
+}
+span.authors.c009{
     background-color:inherit
 }
-span.nonterminal {
-	font-style: oblique;
-}
-.font-sl {
-	font-style: oblique;
-}
-.center table {
-	margin-left: inherit;
-	margin-right: inherit;
-}
-td .font-bold {
-	font-weight: bold;
-}
-.c003 {
-	text-align: center;
-}
-.cellpadding1 tr td {
-	padding: 1px 4px;
+span.c013{
+    font-weight:700
 }
 .caml-input{
     span.ocamlkeyword{

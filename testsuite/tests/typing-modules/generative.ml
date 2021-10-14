@@ -65,10 +65,9 @@ Line 2, characters 36-38:
                                         ^^
 Error: Signature mismatch:
        Modules do not match:
-         functor (X : sig end) -> ...
+         functor (X : sig end) -> sig end
        is not included in
-         functor () -> ...
-       The functor was expected to be generative at this position
+         functor () -> sig end
 |}];;
 module F3 () = struct end;;
 module F4 : functor (X : sig end) -> sig end = F3;; (* fail *)
@@ -79,10 +78,9 @@ Line 2, characters 47-49:
                                                    ^^
 Error: Signature mismatch:
        Modules do not match:
-         functor () -> ...
+         functor () -> sig end
        is not included in
-         functor (X : sig end) -> ...
-       The functor was expected to be applicative at this position
+         functor (X : sig end) -> sig end
 |}];;
 
 (* tests for shortened functor notation () *)

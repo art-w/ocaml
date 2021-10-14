@@ -25,7 +25,6 @@ Error: Signature mismatch:
          type t = X.t = A | B
        is not included in
          type t = int * bool
-       The type X.t is not equal to the type int * bool
 |}];;
 
 
@@ -66,8 +65,7 @@ Line 1, characters 0-41:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          (int, [> `A ]) def
-       Their parameters differ
-       The type int is not equal to the type 'a
+       Their constraints differ.
 |}]
 
 type ('a,'b) kind = ('a, 'b) def = {a:int} constraint 'b = [> `A];;
@@ -89,7 +87,7 @@ Line 3, characters 0-27:
 3 | type missing = d = X of int
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       An extra constructor, Y, is provided in the original definition.
+       The constructor Y is only present in the original definition.
 |}]
 
 type wrong_type = d = X of float
@@ -98,22 +96,19 @@ Line 1, characters 0-32:
 1 | type wrong_type = d = X of float
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       1. Constructors do not match:
+       Constructors do not match:
          X of int
-       is not the same as:
+       is not compatible with:
          X of float
-       The type int is not equal to the type float
-       2. An extra constructor, Y, is provided in the original definition.
+       The types are not equal.
 |}]
 
-type mono = Foo of float
-type unboxed = mono = Foo of float [@@unboxed]
+type unboxed = d = X of float [@@unboxed]
 [%%expect{|
-type mono = Foo of float
-Line 2, characters 0-46:
-2 | type unboxed = mono = Foo of float [@@unboxed]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type mono
+Line 1, characters 0-41:
+1 | type unboxed = d = X of float [@@unboxed]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This variant or record definition does not match that of type d
        Their internal representations differ:
        this definition uses unboxed representation.
 |}]
@@ -124,7 +119,7 @@ Line 1, characters 0-35:
 1 | type perm = d = Y of int | X of int
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       Constructors X and Y have been swapped.
+       Constructors number 1 have different names, X and Y.
 |}]
 
 module M : sig
@@ -148,7 +143,7 @@ Error: Signature mismatch:
          type t = Foo of int
        Constructors do not match:
          Foo : int -> t
-       is not the same as:
+       is not compatible with:
          Foo of int
        The first has explicit return type and the second doesn't.
 |}]

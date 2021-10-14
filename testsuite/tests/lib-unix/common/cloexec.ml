@@ -16,7 +16,7 @@
 
 * hasunix
 include unix
-readonly_files = "fdstatus_aux.c fdstatus_main.ml"
+files = "fdstatus_aux.c fdstatus_main.ml"
 
 ** libunix
 *** setup-ocamlc.byte-build-env

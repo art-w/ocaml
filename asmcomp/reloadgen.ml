@@ -70,10 +70,6 @@ method reload_operation op arg res =
       | _ ->
           (arg, res)
       end
-  | Iopaque ->
-      (* arg = result, can be on stack or register *)
-      assert (arg.(0).stamp = res.(0).stamp);
-      (arg, res)
   | _ ->
       (self#makeregs arg, self#makeregs res)
 

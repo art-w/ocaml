@@ -39,8 +39,7 @@ List.map is_right [left 1; right true];;
 - : (unit, int) Either.t list = [Left (); Right 3]
 |}];;
 
-[map ~left:succ ~right:not (Left 1);
- map ~left:succ ~right:not (Right true)];;
+[map succ not (Left 1); map succ not (Right true)];;
 [%%expect {|
 - : (int, bool) Either.t list = [Left 2; Right false]
 |}];;

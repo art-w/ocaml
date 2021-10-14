@@ -20,15 +20,15 @@ include $(ROOTDIR)/Makefile.common
 TARGET_BINDIR ?= $(BINDIR)
 
 COMPILER=$(ROOTDIR)/ocamlc$(EXE)
-CAMLC=$(OCAMLRUN) $(COMPILER)
-COMPFLAGS=-strict-sequence -absname -w +a-4-9-41-42-44-45-48-70 \
-          -g -warn-error +A -bin-annot -nostdlib -principal \
+CAMLC=$(CAMLRUN) $(COMPILER)
+COMPFLAGS=-strict-sequence -absname -w +a-4-9-41-42-44-45-48 \
+          -g -warn-error A -bin-annot -nostdlib -principal \
           -safe-string -strict-formats
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
 endif
 OPTCOMPILER=$(ROOTDIR)/ocamlopt
-CAMLOPT=$(OCAMLRUN) $(OPTCOMPILER)
+CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
 CAMLDEP=$(BOOT_OCAMLC) -depend
 DEPFLAGS=-slash
 
@@ -56,16 +56,6 @@ allopt: stdlib.cmxa std_exit.cmx
 opt.opt: allopt
 
 .PHONY: install
-# Ensure any pre-4.13 lowercased artefacts are removed on macOS and Windows
-install::
-	stale="$(filter-out $(notdir $(wildcard stdlib__*.cmi)), \
-         $(notdir $(wildcard $(INSTALL_LIBDIR)/stdlib__*.cmi)))"; \
-  if test -n "$$stale" ; then \
-    echo "$(INSTALL_LIBDIR) contains stale stdlib artefacts"; \
-    echo "Please rm $(INSTALL_LIBDIR)/stdlib__*.cm* and re-run make install"; \
-    exit 1; \
-  fi
-
 install::
 	$(INSTALL_DATA) \
 	  stdlib.cma std_exit.cmo *.cmi camlheader_ur \
@@ -91,17 +81,7 @@ endif
 installopt: installopt-default
 
 .PHONY: installopt-default
-# Ensure any pre-4.13 lowercased artefacts are removed on macOS and Windows
-installopt-default::
-	stale="$(filter-out $(notdir $(wildcard stdlib__*.cmx)), \
-         $(notdir $(wildcard $(INSTALL_LIBDIR)/stdlib__*.cmx)))"; \
-  if test -n "$$stale" ; then \
-    echo "$(INSTALL_LIBDIR) contains stale stdlib artefacts"; \
-    echo "Please rm $(INSTALL_LIBDIR)/stdlib__*.cmx and re-run make install"; \
-    exit 1; \
-  fi
-
-installopt-default::
+installopt-default:
 	$(INSTALL_DATA) \
 	  stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx \
 	  "$(INSTALL_LIBDIR)"
@@ -158,7 +138,7 @@ camlhead%: tmphead%.exe
 # Again, pattern weirdness here means that the dot is always present so that
 # tmpheader.exe matches.
 tmpheader%exe: $(HEADERPROGRAM)%$(O)
-	$(call MKEXE_USING_COMPILER,$@,$^ $(EXTRALIBS))
+	$(call MKEXE_BOOT,$@,$^ $(EXTRALIBS))
 # FIXME This is wrong - mingw could invoke strip; MSVC equivalent?
 ifneq "$(UNIX_OR_WIN32)" "win32"
 	strip $@
@@ -176,7 +156,7 @@ camlheader_ur: camlheader
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
 tmptargetcamlheader%exe: $(TARGETHEADERPROGRAM)%$(O)
-	$(call MKEXE_USING_COMPILER,$@,$^ $(EXTRALIBS))
+	$(call MKEXE_BOOT,$@,$^ $(EXTRALIBS))
 	strip $@
 
 $(TARGETHEADERPROGRAM)%$(O): $(HEADERPROGRAM).c
@@ -200,13 +180,17 @@ stdlib.cma: $(OBJS)
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $^
 
-.PHONY: distclean
-distclean: clean
-	rm -f sys.ml
+sys.ml: $(ROOTDIR)/VERSION sys.mlp
+	sed -e "s|%%VERSION%%|`sed -e 1q $< | tr -d '\r'`|" sys.mlp > $@
 
 .PHONY: clean
 clean::
+	rm -f sys.ml
+
+clean::
 	rm -f $(CAMLHEADERS)
+
+.SUFFIXES: .mli .ml .cmi .cmo .cmx
 
 export AWK
 
@@ -238,7 +222,7 @@ stdlib__%.cmx:
 	           -o $@ -c $(filter %.ml, $^)
 
 # Dependencies on the compiler
-COMPILER_DEPS=$(filter-out -use-prims $(OCAMLRUN), $(CAMLC))
+COMPILER_DEPS=$(filter-out -use-prims $(CAMLRUN), $(CAMLC))
 $(OBJS) std_exit.cmo: $(COMPILER_DEPS)
 $(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER_DEPS)
 $(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
@@ -252,7 +236,6 @@ $(OTHERS:.cmo=.cmx) std_exit.cmx: stdlib.cmx
 
 clean::
 	rm -f *.cm* *.o *.obj *.a *.lib *.odoc
-	rm -rf flexdll
 
 include .depend
 

@@ -42,12 +42,6 @@ let force f x =
 let get_arg x =
   match !x with Thunk a -> Some a | _ -> None
 
-let get_contents x =
-  match !x with
-  | Thunk a -> Either.Left a
-  | Done b -> Either.Right b
-  | Raise e -> raise e
-
 let create x =
   ref (Thunk x)
 
