@@ -616,7 +616,8 @@ tests:
 clean::
 	$(MAKE) -C testsuite clean
 
-# Run all benchmarks from scratch
+# Run all the benchmarks from scratch
+# Use $ cd testsuite ; make bench to avoid rebuilding
 
 .PHONY: bench
 bench:
