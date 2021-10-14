@@ -7,7 +7,7 @@ SET_LD_PATH = CAML_LD_LIBRARY_PATH=$(LD_LIBRARY_PATH)
 
 TEXQUOTE = $(SRC)/runtime/ocamlrun ../tools/texquote2
 
-FILES = allfiles.tex biblio.tex foreword.tex version.tex warnings-help.etex ifocamldoc.tex
+FILES = allfiles.tex biblio.tex foreword.tex version.tex cmds/warnings-help.etex ifocamldoc.tex
 
 TEXINPUTS = ".:..:../refman:../refman/extensions:../library:../cmds:../tutorials:../../styles:"
 RELEASE = $$HOME/release/$${RELEASENAME}
@@ -87,7 +87,9 @@ text: files latex_files
 
 
 all:
-	$(MAKE) html text info manual
+	$(MAKE) html
+	$(MAKE) text
+	$(MAKE) info
 	$(MAKE) manual
 	$(MAKE) index
 	$(MAKE) manual
@@ -127,7 +129,7 @@ etex-files: $(FILES)
 version.tex: $(SRC)/VERSION
 	sed -n -e '1s/^\([0-9]*\.[0-9]*\).*$$/\\def\\ocamlversion{\1}/p' $< > $@
 
-warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
+cmds/warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
 	(echo "% This file is generated from (ocamlc -warn-help)";\
 	 echo "% according to a rule in manual/src/Makefile.";\
 	 echo "% In particular, the reference to documentation sections";\
@@ -136,7 +138,8 @@ warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
 	 echo "%";\
 	 $(SET_LD_PATH) $(SRC)/boot/ocamlrun $(SRC)/ocamlc -warn-help \
 	 | LC_ALL=C sed -e 's/^ *\([0-9][0-9]*\) *\[\([a-z][a-z-]*\)\]\(.*\)/\\item[\1 "\2"] \3/' \
-               -e 's/^ *\([0-9A-Z][0-9]*\) *\([^]].*\)/\\item[\1] \2/'\
+	                -e 's/^ *\([0-9A-Z][0-9]*\) *\([^]].*\)/\\item[\1] \2/'\
+	 | sed -e 's/@/\\@/g' \
 	) >$@
 #	sed --inplace is not portable, emulate
 	for i in 52 57; do\
@@ -159,7 +162,11 @@ clean:
 	$(MAKE) -C tutorials clean
 	$(MAKE) -C html_processing clean
 	-rm -f texstuff/*
-	cd htmlman; rm -rf libref compilerlibref index.html \
-	manual*.html *.haux *.hind *.svg
-	cd textman; rm -f manual.txt *.haux *.hind
-	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind
+	cd htmlman; rm -rf libref compilerlibref *.htoc *.html *.haux *.hind *.svg \
+	                   manual.hmanual manual.hmanual.kwd manual.css
+	cd textman; rm -f manual.txt *.haux *.hind *.htoc
+	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind *.info*.gz
+
+.PHONY: distclean
+distclean: clean
+	$(MAKE) -C html_processing distclean
