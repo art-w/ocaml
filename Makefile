@@ -622,7 +622,7 @@ clean::
 bench:
 	@./configure 1>&2
 	@$(MAKE) 1>&2
-	@$(MAKE) -C testsuite --no-print-directory bench
+	@$(MAKE) -C testsuite --no-print-directory benchmarks
 
 # Build the manual latex files from the etex source files
 # (see manual/README.md)
