@@ -391,7 +391,7 @@ Line 5, characters 28-29:
 5 |   let f = function A -> 1 | B -> 2
                                 ^
 Error: This variant pattern is expected to have type a
-       The constructor B does not belong to type a
+       There is no constructor B within type a
 |}];;
 
 module PR6849 = struct
@@ -1095,6 +1095,13 @@ Line 3, characters 2-26:
       ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This expression has type < bar : int; foo : int; .. >
        but an expression was expected of type 'a
+       The type constructor $1 would escape its scope
+|}, Principal{|
+Line 3, characters 2-26:
+3 |   (x:<foo:int;bar:int;..>)
+      ^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression has type < bar : int; foo : int; .. >
+       but an expression was expected of type 'a
        This instance of $1 is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -1112,6 +1119,8 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
   x, x#foo, x#bar
 ;;
 [%%expect{|
+val g : 't -> 't int_foo -> 't int_bar -> 't * int * int = <fun>
+|}, Principal{|
 Line 3, characters 5-10:
 3 |   x, x#foo, x#bar
          ^^^^^
