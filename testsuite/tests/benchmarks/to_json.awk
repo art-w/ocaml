@@ -1,6 +1,12 @@
 (NF == 3) {
-    tests[$1]++;
-    metrics[$1, $2] = $3;
+    key = $1 $2
+    if (key in metrics) {
+        multiple[key]++;
+        metrics[key] = metrics[key] "," $3;
+    } else {
+        metrics[key] = $3;
+        tests[$1]++;
+    }
 }
 
 END {
@@ -15,10 +21,12 @@ END {
                 continue;
             n = length(test)
             metric = substr(key, n + 1, length(key) - n)
-            count = metrics[key]
+            measurements = metrics[key]
+            if (key in multiple)
+                measurements = "[" measurements "]"
             --nb_metrics
             comma = nb_metrics > 0 ? "," : ""
-            print "      \"" metric "\": " count comma
+            print "      \"" metric "\": " measurements comma
         }
         --nb_tests
         comma = nb_tests > 0 ? "," : ""
