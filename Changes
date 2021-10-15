@@ -88,7 +88,17 @@ Working version
   experimental.
   (Nicolás Ojeda Bär, review by David Allsopp)
 
+- #10194: Change compaction-triggering heuristic: use the overhead measured
+  by the previous GC cycle instead of an indirect (and noisy) computation
+  of the current overhead.
+  (Damien Doligez, review by Stephen Dolan)
+
 ### Code generation and optimizations:
+
+- #1400: Add an optional invariants check on Cmm, which can be activated
+  with the -dcmm-invariants flag
+  (Vincent Laviron, with help from Sebastien Hinderer, review by Stephen Dolan
+   and David Allsopp)
 
 - #9876: do not cache the young_limit GC variable in a processor register.
   This affects the ARM64, PowerPC and RISC-V ports, making signal handling
@@ -111,10 +121,17 @@ Working version
 - #10349: Fix destroyed_at_c_call on RISC-V
   (Mark Shinwell, review by Nicolás Ojeda Bär)
 
-- #1400: Add an optional invariants check on Cmm, which can be activated
-  with the -dcmm-invariants flag
-  (Vincent Laviron, with help from Sebastien Hinderer, review by Stephen Dolan
-   and David Allsopp)
+- #10404: Add a generic backward dataflow analyzer and use it to speed up
+  liveness analysis
+  (Xavier Leroy, review by Gabriel Scherer, Greta Yorsh, Mark Shinwell)
+
+- #10414: Avoid compilation times exponential in the nesting of loops
+  in the spilling and reloading passes
+  (Xavier Leroy, review by Vincent Laviron)
+
+- #10419: Add %frame_pointers primitive which is true only in native code with
+  frame pointers mode enabled.
+  (David Allsopp, review by Vincent Laviron and Mark Shinwell)
 
 ### Type system:
 
@@ -234,6 +251,13 @@ Working version
   (Vincent Laviron, review by Daniel Bünzli and Gabriel Scherer)
 
 ### Compiler user-interface and warnings:
+
+- #1737, #2092, #7852, #7859, #10405, #10417: Update locations during
+  destructive substitutions
+  (Thomas Refis, review by Gabriel Radanne, report by Hugo Heuzard)
+
+- #2245: Improve error message for link order error in bytecode
+  (Pierre Chambart, review by Jérémie Dimino and Gabriel Scherer)
 
 - #8732, improved error messages for invalid private row type definitions.
   For instance, [ type t = private [< `A > `A ] ] .
@@ -361,6 +385,15 @@ Working version
   (Gabriel Scherer, review by Sébastien Hinderer and David Allsopp,
    report by Ralph Seichter)
 
+- #10135: Overhaul the FlexDLL bootstrap process. It's now fully integrated
+  with the default build target and controlled by --with-flexdll which allows
+  externally downloaded sources for FlexDLL to be specified. A separate
+  non-shared version of the runtime is built, and shared artefacts are no longer
+  built twice. When bootstrapping, any flexlink in PATH is now ignored and the
+  Cygwin port also supports bootstrapping FlexDLL. flexlink.opt is automatically
+  built and installed as part of opt.opt/world.opt.
+  (David Allsopp, review by Sébastien Hinderer)
+
 - #10156: configure script: fix sockets feature detection.
   (Lucas Pluvinage, review by David Allsopp and Damien Doligez)
 
@@ -384,7 +417,19 @@ Working version
 
 ### Bug fixes:
 
+- #6654, #9974, #10401: make `include` and with `constraints` handle correctly
+  the ghost components of signatures. For instance, in
+
+    include struct class c = object end end type c
+
+   the type `c` shadows the `class c` to avoid shadowing only the ghost type
+   c introduced by the class.
+  (Florian Angeletti, report by Eduardo Rafael, review by Gabriel Scherer)
+
 - #6985, #10385: remove all ghost row types from included modules
+  (Florian Angeletti, review by Gabriel Scherer)
+
+- #7453, #9828, #10416: fix #show for recursive types and modules
   (Florian Angeletti, review by Gabriel Scherer)
 
 * #8857, #10220: Don't clobber GetLastError() in caml_leave_blocking_section

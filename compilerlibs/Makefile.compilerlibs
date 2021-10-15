@@ -86,6 +86,7 @@ TYPING = \
   typing/env.cmo \
   typing/errortrace.cmo \
   typing/typedtree.cmo \
+  typing/signature_group.cmo \
   typing/printtyped.cmo \
   typing/ctype.cmo \
   typing/printtyp.cmo \
@@ -209,6 +210,7 @@ ASMCOMP = \
   asmcomp/printmach.cmo \
   asmcomp/selectgen.cmo \
   asmcomp/selection.cmo \
+  asmcomp/dataflow.cmo \
   asmcomp/comballoc.cmo \
   asmcomp/CSEgen.cmo \
   asmcomp/CSE.cmo \
