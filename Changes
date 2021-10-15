@@ -1,5 +1,6 @@
 Working version
 ----------------
+
 ### Language features:
 
 - #10437: Allow explicit binders for type variables.
@@ -10,6 +11,10 @@ Working version
 * #9391, #9424: Fix failed assertion in runtime due to ephemerons *set_* and
   *blit_* function during Mark phase
   (François Bobot, reported by Stephen Dolan, reviewed by Damien Doligez)
+
+- #10549: Stack overflow detection and naked pointers checking for ARM64
+  (Xavier Leroy, review by Stephen Dolan)
+
 
 ### Code generation and optimizations:
 
@@ -26,6 +31,11 @@ Working version
 
 - #10526: add Random.bits32, Random.bits64, Random.nativebits
   (Xavier Leroy, review by Gabriel Scherer and François Bobot)
+
+* #10568: remove Obj.marshal and Obj.unmarshal
+  (these functions have been deprecated for a while and are superseded
+   by the functions from module Marshal)
+  (François Pottier, review by Gabriel Scherer and Kate Deplaix)
 
 ### Other libraries:
 
@@ -51,6 +61,9 @@ Working version
   (Nicolás Ojeda Bär, report by Gabriel Scherer, review by Daniel Bünzli,
   Gabriel Scherer and David Allsopp)
 
+- #10565: Toplevel value printing: truncate strings only after 8 bytes.
+  (Wiktor Kuchta, review by Xavier Leroy)
+
 ### Manual and documentation:
 
 - #7812, #10475: reworded the description of the behaviors of
@@ -70,6 +83,10 @@ Working version
 - #10407: Produce more detailed error messages that contain full error traces
   when module inclusion fails.
   (Antal Spector-Zabusky, review by Florian Angeletti)
+
+- #10531: add naked_pointers to ocamlc -config exporting NAKED_POINTERS from
+  Makefile.config.
+  (Damien Doligez, review by Mark Shinwell and Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
 
@@ -118,7 +135,7 @@ Working version
 
 - #10539: Field kinds should be kept when copying types
   Losing the sharing meant that one could desynchronize them between several
-  occurences of self, allowing a method to be both public and hidden,
+  occurrences of self, allowing a method to be both public and hidden,
   which broke type soundness.
   (Jacques Garrigue, review by Leo White)
 
@@ -429,6 +446,9 @@ OCaml 4.13.0
 - #9632: Document incremental build solutions with opam
   (Vincent Laviron, review by Daniel Bünzli and Gabriel Scherer)
 
+- #10497: Styling changes in the post-processed HTML manual (webman)
+  (Wiktor Kuchta, review by Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 - #1737, #2092, #7852, #7859, #10405, #10417: Update locations during
@@ -570,6 +590,10 @@ OCaml 4.13.0
 - #10543: Fix Ast_mapper to apply the mapping function to the constants in
   "interval" patterns `c1..c2`.
   (Guillaume Petiot, review by Gabriel Scherer and Nicolás Ojeda Bär)
+
+- #7449 #10458: Change the size heuristics of switch in flambda to avoid
+  inlining too large jump tables. (Pierre Chambart, review by Gabriel Scherer,
+  report by Mark Hayden)
 
 ### Build system:
 
@@ -718,6 +742,11 @@ OCaml 4.13.0
 - #10449: Fix major GC work accounting (the GC was running too fast).
   (Damien Doligez, report by Stephen Dolan, review by Nicolás Ojeda Bär
    and Sadiq Jaffer)
+
+- #10450, #10558: keep %apply and %revapply primitives working with abstract
+  types. This breach of backward compatibility was only present in the alpha
+  releases of OCaml 4.13.0 .
+  (Florian Angeletti, review by Thomas Refis and Leo White)
 
 - #10454: Check row_more in nondep_type_rec.
   (Leo White, review by Thomas Refis)
