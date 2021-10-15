@@ -781,6 +781,9 @@ partialclean::
 
 # The runtime system for the bytecode compiler
 
+$(SAK):
+	$(MAKE) -C runtime sak$(EXE)
+
 .PHONY: runtime
 runtime: stdlib/libcamlrun.$(A)
 
