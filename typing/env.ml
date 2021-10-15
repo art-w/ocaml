@@ -1441,8 +1441,8 @@ let same_types env1 env2 =
 
 let used_persistent () =
   Persistent_env.fold !persistent_env
-    (fun s _m r -> Concr.add s r)
-    Concr.empty
+    (fun s _m r -> String.Set.add s r)
+    String.Set.empty
 
 let find_all_comps wrap proj s (p, mda) =
   match get_components mda.mda_components with
@@ -2417,11 +2417,7 @@ let mark_label_used usage ld =
   | exception Not_found -> ()
 
 let mark_constructor_description_used usage env cstr =
-  let ty_path =
-    match get_desc cstr.cstr_res with
-    | Tconstr(path, _, _) -> path
-    | _ -> assert false
-  in
+  let ty_path = Btype.cstr_type_path cstr in
   mark_type_path_used env ty_path;
   match Types.Uid.Tbl.find !used_constructors cstr.cstr_uid with
   | mark -> mark usage
