@@ -270,7 +270,9 @@ one: lib tools
 benchmarks: lib tools
 	$(eval BENCHMARK_FILE=$(shell mktemp --tmpdir=tests/benchmarks bench.XXX.tsv))
 	$(eval export BENCHMARK_FILE=$(shell realpath $(BENCHMARK_FILE)))
-	@-$(MAKE) all-benchmarks 1>&2
+	@-for i in $(shell seq 1 10); do \
+		$(MAKE) all-benchmarks; \
+	done 1>&2
 	@-$(AWK) -f ./tests/benchmarks/to_json.awk < "$(BENCHMARK_FILE)"
 	@rm '$(BENCHMARK_FILE)'
 
