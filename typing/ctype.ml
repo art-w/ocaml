@@ -1119,14 +1119,6 @@ let rec copy ?partial ?keep_names scope ty =
               (* Return a new copy *)
               Tvariant (copy_row copy true row keep more')
           end
-      | Tfield (_p, k, _ty1, ty2) ->
-          begin match field_kind_repr k with
-            Fabsent  -> Tlink (copy ty2)
-          | Fpresent -> copy_type_desc copy desc
-          | Fvar r ->
-              For_copy.dup_kind scope r;
-              copy_type_desc copy desc
-          end
       | Tobject (ty1, _) when partial <> None ->
           Tobject (copy ty1, ref None)
       | _ -> copy_type_desc ?keep_names copy desc
@@ -5390,14 +5382,6 @@ let same_constr env t1 t2 =
 let () =
   Env.same_constr := same_constr
 
-let is_immediate = function
-  | Type_immediacy.Unknown -> false
-  | Type_immediacy.Always -> true
-  | Type_immediacy.Always_on_64bits ->
-      (* In bytecode, we don't know at compile time whether we are
-         targeting 32 or 64 bits. *)
-      !Clflags.native_code && Sys.word_size = 64
-
 let immediacy env typ =
    match get_desc typ with
   | Tconstr(p, _args, _abbrev) ->
@@ -5424,5 +5408,3 @@ let immediacy env typ =
       else
         Type_immediacy.Always
   | _ -> Type_immediacy.Unknown
-
-let maybe_pointer_type env typ = not (is_immediate (immediacy env typ))

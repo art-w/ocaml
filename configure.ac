@@ -1110,6 +1110,8 @@ AS_CASE([$host],
     [arch=amd64; system=netbsd],
   [x86_64-*-openbsd*],
     [arch=amd64; system=openbsd],
+  [x86_64-*-haiku*],
+    [arch=amd64; system=beos],
   [arm64-*-darwin*],
     [arch=arm64; system=macosx],
   [aarch64-*-darwin*],
@@ -1987,7 +1989,7 @@ AS_IF([test x"$prefix" = "xNONE"],
   [AS_IF([test x"$unix_or_win32" = "xwin32" \
           && test "$host_vendor-$host_os" != "$build_vendor-$build_os" ],
     [AS_CASE([$build],
-      [*-pc-cygwin], [prefix=`cygpath -m "$prefix"`])])])
+      [*-pc-cygwin], [prefix="$(LC_ALL=C.UTF-8 cygpath -m "$prefix")"])])])
 
 # Define a few macros that were defined in config/m-nt.h
 # but whose value is not guessed properly by configure
