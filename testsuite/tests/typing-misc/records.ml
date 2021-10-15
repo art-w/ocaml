@@ -197,7 +197,8 @@ Line 1, characters 0-40:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          (int, [> `A ]) def
-       Their constraints differ.
+       Their parameters differ
+       The type int is not equal to the type 'a
 |}]
 
 type ('a,'b) kind = ('a, 'b) def = A constraint 'b = [> `A];;
@@ -220,7 +221,7 @@ Line 2, characters 0-37:
 Error: This variant or record definition does not match that of type d
        Fields do not match:
          y : int;
-       is not compatible with:
+       is not the same as:
          mutable y : int;
        This is mutable and the original is not.
 |}]
@@ -231,7 +232,7 @@ Line 1, characters 0-28:
 1 | type missing = d = { x:int }
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       The field y is only present in the original definition.
+       An extra field, y, is provided in the original definition.
 |}]
 
 type wrong_type = d = {x:float}
@@ -240,11 +241,12 @@ Line 1, characters 0-31:
 1 | type wrong_type = d = {x:float}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       Fields do not match:
+       1. Fields do not match:
          x : int;
-       is not compatible with:
+       is not the same as:
          x : float;
-       The types are not equal.
+       The type int is not equal to the type float
+       2. An extra field, y, is provided in the original definition.
 |}]
 
 type mono = {foo:int}
@@ -265,5 +267,5 @@ Line 1, characters 0-30:
 1 | type perm = d = {y:int; x:int}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type d
-       Fields number 1 have different names, x and y.
+       Fields x and y have been swapped.
 |}]
