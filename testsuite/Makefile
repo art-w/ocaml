@@ -268,12 +268,10 @@ one: lib tools
 
 .PHONY: benchmarks
 benchmarks: lib tools
-	$(eval BENCHMARK_FILE=$(shell mktemp --tmpdir=tests/benchmarks bench.XXX.tsv))
-	$(eval export BENCHMARK_FILE=$(shell realpath $(BENCHMARK_FILE)))
-	@-for i in $(shell seq 1 10); do \
-		$(MAKE) all-benchmarks; \
-	done 1>&2
-	@-$(AWK) -f ./tests/benchmarks/to_json.awk < "$(BENCHMARK_FILE)"
+	@-for i in $(shell seq 1 5); do \
+	    $(MAKE) all-benchmarks 1>&2 ; \
+	  done
+	@-LC_NUMERIC=POSIX $(AWK) -f ./tests/benchmarks/to_json.awk < "$(BENCHMARK_FILE)"
 	@rm '$(BENCHMARK_FILE)'
 
 .PHONY: exec-one
