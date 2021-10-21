@@ -620,8 +620,9 @@ clean::
 
 .PHONY: bench
 bench:
-	@./configure 1>&2
-	@$(MAKE) 1>&2
+	$(eval BENCHMARK_FILE=$(shell mktemp --tmpdir=testsuite/tests/benchmarks bench.XXX.tsv))
+	$(eval export BENCHMARK_FILE=$(shell realpath $(BENCHMARK_FILE)))
+	@$(shell ./bench.sh "$(BENCHMARK_FILE)" 1>&2)
 	@$(MAKE) -C testsuite --no-print-directory benchmarks
 
 # Build the manual latex files from the etex source files
@@ -1114,7 +1115,7 @@ bytecomp/opcodes.ml: runtime/caml/instruct.h $(make_opcodes)
 	$(NEW_OCAMLRUN) $(make_opcodes) -opcodes < $< > $@
 
 bytecomp/opcodes.mli: bytecomp/opcodes.ml
-	$(CAMLC) -i $< > $@
+	OCAMLPARAM=",_,timings=0" $(CAMLC) -i $< > $@
 
 $(make_opcodes): tools/make_opcodes.mll
 	$(MAKE) -C tools make_opcodes
