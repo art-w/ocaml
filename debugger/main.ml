@@ -197,7 +197,7 @@ let speclist = [
    ]
 
 let function_placeholder () =
-  failwith "custom printer tried to invoke a function from the debuggee"
+  raise Not_found
 
 let report report_error error =
   eprintf "Debugger [version %s] environment error:@ @[@;%a@]@.;"
@@ -244,3 +244,6 @@ let main () =
   | Cmi_format.Error e ->
       report Cmi_format.report_error e;
       exit 2
+
+let _ =
+  Unix.handle_unix_error main ()

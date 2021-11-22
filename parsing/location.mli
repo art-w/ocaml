@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Source code locations (ranges of positions), used in parsetree.
+(** {1 Source code locations (ranges of positions), used in parsetree}
 
   {b Warning:} this module is unstable and part of
   {{!Compiler_libs}compiler-libs}.

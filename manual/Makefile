@@ -13,26 +13,26 @@ tools:
 	$(MAKE) -C tests tools
 
 manual: tools
-	$(MAKE) -C src all
+	$(MAKE) -C manual all
 
 html: tools
-	$(MAKE) -C src html
+	$(MAKE) -C manual html
 
 web: tools
-	$(MAKE) -C src web
+	$(MAKE) -C manual web
 
 release:
-	$(MAKE) -C src release
+	$(MAKE) -C manual release
 
 # The pregen-etex target generates the latex files from the .etex
 # files to ensure that this phase of the manual build process, which
 # may execute OCaml fragments and expect certain outputs, is correct
 pregen-etex: tools
-	$(MAKE) -C src etex-files
+	$(MAKE) -C manual etex-files
 
 # pregen builds both .etex files and the documentation of the standard library
 pregen: tools
-	$(MAKE) -C src files
+	$(MAKE) -C manual files
 
 
 .PHONY: tests manual tools
@@ -40,10 +40,10 @@ pregen: tools
 
 .PHONY: clean
 clean:
-	$(MAKE) -C src clean
+	$(MAKE) -C manual clean
 	$(MAKE) -C tools  clean
 	$(MAKE) -C tests  clean
 
 .PHONY: distclean
-distclean: clean
-	$(MAKE) -C src distclean
+distclean:
+	$(MAKE) -C manual distclean

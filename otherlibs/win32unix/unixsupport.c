@@ -149,7 +149,12 @@ static struct error_entry win_error_table[] = {
   { WSAEINTR, 0, EINTR },
   { WSAEINVAL, 0, EINVAL },
   { WSAEMFILE, 0, EMFILE },
-  { WSAENAMETOOLONG, 0, ENAMETOOLONG },
+#ifdef WSANAMETOOLONG
+  { WSANAMETOOLONG, 0, ENAMETOOLONG },
+#endif
+#ifdef WSAENFILE
+  { WSAENFILE, 0, ENFILE },
+#endif
   { WSAENOTEMPTY, 0, ENOTEMPTY },
   { 0, -1, 0 }
 };
@@ -279,15 +284,6 @@ value unix_error_of_code (int errcode)
   return err;
 }
 
-int code_of_unix_error (value error)
-{
-  if (Is_block(error)) {
-    return Int_val(Field(error, 0));
-  } else {
-    return error_table[Int_val(error)];
-  }
-}
-
 void unix_error(int errcode, const char *cmdname, value cmdarg)
 {
   value res;
@@ -327,21 +323,9 @@ int unix_cloexec_default = 0;
 
 int unix_cloexec_p(value cloexec)
 {
-  if (Is_some(cloexec))
-    return Bool_val(Some_val(cloexec));
+  /* [cloexec] is a [bool option].  */
+  if (Is_block(cloexec))
+    return Bool_val(Field(cloexec, 0));
   else
     return unix_cloexec_default;
-}
-
-int win_set_inherit(HANDLE fd, BOOL inherit)
-{
-  /* According to the MSDN, SetHandleInformation may not work
-     for console handles on WinNT4 and earlier versions. */
-  if (! SetHandleInformation(fd,
-                             HANDLE_FLAG_INHERIT,
-                             inherit ? HANDLE_FLAG_INHERIT : 0)) {
-    win32_maperr(GetLastError());
-    return -1;
-  }
-  return 0;
 }

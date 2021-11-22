@@ -40,7 +40,6 @@ module type Common_options = sig
   val _no_strict_sequence : unit -> unit
   val _strict_formats : unit -> unit
   val _no_strict_formats : unit -> unit
-  val _force_tmc : unit -> unit
   val _unboxed_types : unit -> unit
   val _no_unboxed_types : unit -> unit
   val _unsafe_string : unit -> unit
@@ -66,7 +65,6 @@ module type Core_options = sig
   val _dsource : unit -> unit
   val _dparsetree : unit -> unit
   val _dtypedtree : unit -> unit
-  val _dshape : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
 
@@ -139,7 +137,6 @@ module type Toplevel_options = sig
   val _args0 : string -> string array
   val _color : string -> unit
   val _error_style : string -> unit
-  val _eval: string -> unit
 end
 ;;
 
@@ -206,12 +203,13 @@ module type Optcommon_options = sig
   val _dflambda_verbose : unit -> unit
   val _drawclambda : unit -> unit
   val _dclambda : unit -> unit
-  val _dcmm_invariants : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit
   val _dcse : unit -> unit
   val _dlive : unit -> unit
+  val _davail : unit -> unit
+  val _drunavail : unit -> unit
   val _dspill : unit -> unit
   val _dsplit : unit -> unit
   val _dinterf : unit -> unit

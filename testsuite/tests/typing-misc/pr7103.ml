@@ -24,8 +24,8 @@ Line 1, characters 27-28:
 1 | let _ = fun (x : a t) -> f x;;
                                ^
 Error: This expression has type a t but an expression was expected of type
-         < .. > t
-       Type a is not compatible with type < .. >
+         (< .. > as 'a) t
+       Type a is not compatible with type < .. > as 'a
 |}];;
 
 let _ = fun (x : a t) -> g x;;
@@ -34,8 +34,8 @@ Line 1, characters 27-28:
 1 | let _ = fun (x : a t) -> g x;;
                                ^
 Error: This expression has type a t but an expression was expected of type
-         [< `b ] t
-       Type a is not compatible with type [< `b ]
+         ([< `b ] as 'a) t
+       Type a is not compatible with type [< `b ] as 'a
 |}];;
 
 let _ = fun (x : a t) -> h x;;
@@ -44,6 +44,6 @@ Line 1, characters 27-28:
 1 | let _ = fun (x : a t) -> h x;;
                                ^
 Error: This expression has type a t but an expression was expected of type
-         [> `b ] t
-       Type a is not compatible with type [> `b ]
+         ([> `b ] as 'a) t
+       Type a is not compatible with type [> `b ] as 'a
 |}];;

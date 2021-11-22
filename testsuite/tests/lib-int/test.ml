@@ -57,11 +57,6 @@ let test_string_conv () =
   assert (Int.of_string "" = None); *)
   ()
 
-let test_min_max () =
-  assert (Int.max 2 3 = 3);
-  assert (Int.min 2 3 = 2)
-
-
 let tests () =
   test_consts ();
   test_arith ();
@@ -70,7 +65,6 @@ let tests () =
   test_compare ();
   test_float_conv ();
   test_string_conv ();
-  test_min_max ();
   ()
 
 let () =

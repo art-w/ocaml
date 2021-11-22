@@ -70,10 +70,6 @@ method reload_operation op arg res =
       | _ ->
           (arg, res)
       end
-  | Iopaque ->
-      (* arg = result, can be on stack or register *)
-      assert (arg.(0).stamp = res.(0).stamp);
-      (arg, res)
   | _ ->
       (self#makeregs arg, self#makeregs res)
 
@@ -133,7 +129,6 @@ method fundecl f num_stack_slots =
   ({fun_name = f.fun_name; fun_args = f.fun_args;
     fun_body = new_body; fun_codegen_options = f.fun_codegen_options;
     fun_dbg  = f.fun_dbg;
-    fun_poll = f.fun_poll;
     fun_contains_calls = f.fun_contains_calls;
     fun_num_stack_slots = Array.copy num_stack_slots;
    },

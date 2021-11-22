@@ -1,5 +1,5 @@
 (* TEST
-readonly_files = "d.mli e.ml"
+files = "d.mli e.ml"
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte
 module = "d.mli"

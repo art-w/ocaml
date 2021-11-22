@@ -310,6 +310,6 @@ _caml_system__frametable LABEL DWORD
 
         PUBLIC  _caml_extra_params
 _caml_extra_params LABEL DWORD
-        BYTE    256 DUP (?)
+        BYTE    64 DUP (?)
 
         END

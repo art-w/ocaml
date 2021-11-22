@@ -22,7 +22,6 @@ let compile_file filename =
     Emitaux.output_channel := open_out out_name
   end; (* otherwise, stdout *)
   Compilenv.reset "test";
-  Clflags.cmm_invariants := true;
   Emit.begin_assembly();
   let ic = open_in filename in
   let lb = Lexing.from_channel ic in

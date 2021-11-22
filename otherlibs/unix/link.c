@@ -37,12 +37,12 @@ CAMLprim value unix_link(value follow, value path1, value path2)
   p1 = caml_stat_strdup(String_val(path1));
   p2 = caml_stat_strdup(String_val(path2));
   caml_enter_blocking_section();
-  if (Is_none(follow))
+  if (follow == Val_int(0) /* None */)
     ret = link(p1, p2);
-  else {
+  else { /* Some bool */
 # ifdef AT_SYMLINK_FOLLOW
     int flags =
-      Is_some(follow) && Bool_val(Some_val(follow))
+      Is_block(follow) && Bool_val(Field(follow, 0)) /* Some true */
       ? AT_SYMLINK_FOLLOW
       : 0;
     ret = linkat(AT_FDCWD, p1, AT_FDCWD, p2, flags);

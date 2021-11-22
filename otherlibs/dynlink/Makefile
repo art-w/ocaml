@@ -24,13 +24,14 @@ ROOTDIR = ../..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
+CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun$(EXE)
+
 OCAMLC=$(BEST_OCAMLC) -g -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLOPT=$(BEST_OCAMLOPT) -g -nostdlib -I $(ROOTDIR)/stdlib
 
 # COMPFLAGS should be in sync with the toplevel Makefile's COMPFLAGS.
-COMPFLAGS=-strict-sequence -principal -absname \
-          -w +a-4-9-40-41-42-44-45-48-66-70 \
-          -warn-error +A \
+COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-40-41-42-44-45-48-66 \
+	  -warn-error A \
           -bin-annot -safe-string -strict-formats
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
@@ -87,7 +88,6 @@ COMPILERLIBS_SOURCES=\
   utils/local_store.ml \
   utils/load_path.ml \
   utils/int_replace_polymorphic_compare.ml \
-  utils/lazy_backtrack.ml \
   parsing/location.ml \
   parsing/longident.ml \
   parsing/docstrings.ml \
@@ -100,7 +100,6 @@ COMPILERLIBS_SOURCES=\
   typing/path.ml \
   typing/primitive.ml \
   typing/type_immediacy.ml \
-  typing/shape.ml \
   typing/types.ml \
   typing/btype.ml \
   typing/subst.ml \
@@ -247,6 +246,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	  dynlink.cmti dynlink.mli \
 	  "$(INSTALL_LIBDIR)"
 endif
+	$(INSTALL_PROG) $(extract_crc) "$(INSTALL_LIBDIR)"
 
 installopt:
 	if $(NATDYNLINK); then \
@@ -281,19 +281,21 @@ DEPEND_DUMMY_FILES=\
 
 depend: beforedepend
 	touch $(DEPEND_DUMMY_FILES)
-	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
+	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
 	  -I byte -bytecode *.mli *.ml byte/dynlink.ml > .depend
-	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
+	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
 	  -I native -native *.ml native/dynlink.ml >> .depend
 	rm -f $(DEPEND_DUMMY_FILES)
 
 include .depend
 
-%.cmi: %.mli
+.SUFFIXES: .ml .mli .cmi .cmo .cmx
+
+.mli.cmi:
 	$(OCAMLC) -c $(COMPFLAGS) $<
 
-%.cmo: %.ml
+.ml.cmo:
 	$(OCAMLC) -c $(COMPFLAGS) $<
 
-%.cmx: %.ml
+.ml.cmx:
 	$(OCAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<

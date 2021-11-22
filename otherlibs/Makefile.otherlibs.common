@@ -19,6 +19,8 @@ ROOTDIR=../..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
+CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
+
 CAMLC := $(BEST_OCAMLC) -nostdlib -I $(ROOTDIR)/stdlib
 CAMLOPT := $(BEST_OCAMLOPT) -nostdlib -I $(ROOTDIR)/stdlib
 
@@ -30,12 +32,12 @@ OC_CFLAGS += $(SHAREDLIB_CFLAGS) $(EXTRACFLAGS)
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime $(EXTRACPPFLAGS)
 
 # Compilation options
-COMPFLAGS=-absname -w +a-4-9-41-42-44-45-48 -warn-error +A -bin-annot -g \
+COMPFLAGS=-absname -w +a-4-9-41-42-44-45-48 -warn-error A -bin-annot -g \
           -safe-string -strict-sequence -strict-formats $(EXTRACAMLFLAGS)
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
 endif
-MKLIB=$(OCAMLRUN) $(ROOTDIR)/tools/ocamlmklib
+MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
 
 # Variables that must be defined by individual libraries:
 # LIBNAME
@@ -127,13 +129,15 @@ clean:: partialclean
 	rm -f *.dll *.so *.a *.lib *.o *.obj
 	rm -rf $(DEPDIR)
 
-%.cmi: %.mli
+.SUFFIXES: .ml .mli .cmi .cmo .cmx
+
+.mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
-%.cmo: %.ml
+.ml.cmo:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
-%.cmx: %.ml
+.ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 ifeq "$(COMPUTE_DEPS)" "true"

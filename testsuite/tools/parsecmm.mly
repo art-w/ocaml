@@ -180,7 +180,6 @@ fundecl:
              No_CSE;
            ]
            else [ Reduce_code_size ];
-         fun_poll = Lambda.Default_poll;
          fun_dbg = debuginfo ()} }
 ;
 fun_name:
@@ -268,7 +267,7 @@ expr:
           Debuginfo.none) }
   | LPAREN FLOATAREF expr expr RPAREN
       { let open Asttypes in
-        Cop(Cload (Double, Mutable), [access_array $3 $4 Arch.size_float],
+        Cop(Cload (Double_u, Mutable), [access_array $3 $4 Arch.size_float],
           Debuginfo.none) }
   | LPAREN ADDRASET expr expr expr RPAREN
       { let open Lambda in
@@ -280,7 +279,7 @@ expr:
             [access_array $3 $4 Arch.size_int; $5], Debuginfo.none) }
   | LPAREN FLOATASET expr expr expr RPAREN
       { let open Lambda in
-        Cop(Cstore (Double, Assignment),
+        Cop(Cstore (Double_u, Assignment),
             [access_array $3 $4 Arch.size_float; $5], Debuginfo.none) }
 ;
 exprlist:
@@ -320,7 +319,7 @@ chunk:
   | ADDR                        { Word_val }
   | FLOAT32                     { Single }
   | FLOAT64                     { Double }
-  | FLOAT                       { Double }
+  | FLOAT                       { Double_u }
   | VAL                         { Word_val }
 ;
 unaryop:

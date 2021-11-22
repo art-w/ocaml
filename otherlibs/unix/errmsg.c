@@ -15,11 +15,14 @@
 
 #include <errno.h>
 #include <string.h>
+#include <caml/mlvalues.h>
 #include <caml/alloc.h>
-#include "unixsupport.h"
+
+extern int error_table[];
 
 CAMLprim value unix_error_message(value err)
 {
-  int errnum = code_of_unix_error(err);
+  int errnum;
+  errnum = Is_block(err) ? Int_val(Field(err, 0)) : error_table[Int_val(err)];
   return caml_copy_string(strerror(errnum));
 }

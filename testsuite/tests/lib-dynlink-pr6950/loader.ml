@@ -2,7 +2,7 @@
 
 include dynlink
 libraries = ""
-readonly_files = "config.ml b.ml"
+files = "config.ml b.ml"
 
 * shared-libraries
 ** setup-ocamlc.byte-build-env

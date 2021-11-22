@@ -34,9 +34,10 @@ let word_addressed = false
     3 - 10              function arguments and results
     11 - 12             temporaries
     13                  pointer to small data area
-    14 - 28             general purpose, preserved by C
+    14 - 27             general purpose, preserved by C
+    28                  domain state pointer
     29                  trap pointer
-    30                  domain state pointer
+    30                  allocation limit
     31                  allocation pointer
   Floating-point register map:
     0                   temporary
@@ -45,9 +46,9 @@ let word_addressed = false
 *)
 
 let int_reg_name =
-  [| "3"; "4"; "5"; "6"; "7"; "8"; "9"; "10";           (* 0 - 7 *)
-     "14"; "15"; "16"; "17"; "18"; "19"; "20"; "21";    (* 8 - 15 *)
-     "22"; "23"; "24"; "25"; "26"; "27"; "28" |]        (* 16 - 22 *)
+  [| "3"; "4"; "5"; "6"; "7"; "8"; "9"; "10";
+     "14"; "15"; "16"; "17"; "18"; "19"; "20"; "21";
+     "22"; "23"; "24"; "25"; "26"; "27" |]
 
 let float_reg_name =
   [| "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8";
@@ -62,7 +63,7 @@ let register_class r =
   | Val | Int | Addr -> 0
   | Float -> 1
 
-let num_available_registers = [| 23; 31 |]
+let num_available_registers = [| 22; 31 |]
 
 let first_available_register = [| 0; 100 |]
 
@@ -74,7 +75,7 @@ let rotate_registers = true
 (* Representation of hard registers by pseudo-registers *)
 
 let hard_int_reg =
-  let v = Array.make 23 Reg.dummy in
+  let v = Array.make 22 Reg.dummy in
   for i = 0 to 21 do v.(i) <- Reg.at_location Int (Reg i) done; v
 
 let hard_float_reg =
@@ -91,8 +92,6 @@ let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
 
 (* Calling conventions *)
-
-let size_domainstate_args = 64 * size_int
 
 let loc_int last_int make_stack reg_use_stack int ofs =
   if !int <= last_int then begin
@@ -138,12 +137,12 @@ let loc_int_pair last_int make_stack int ofs =
     [| stack_lower; stack_upper |]
   end
 
-let calling_conventions first_int last_int first_float last_float
-      make_stack first_stack arg =
+let calling_conventions first_int last_int first_float last_float make_stack
+      arg =
   let loc = Array.make (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
-  let ofs = ref first_stack in
+  let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i) with
     | Val | Int | Addr ->
@@ -151,30 +150,23 @@ let calling_conventions first_int last_int first_float last_float
     | Float ->
         loc.(i) <- loc_float last_float make_stack false int float ofs
   done;
-  (loc, Misc.align (max 0 !ofs) 16)  (* keep stack 16-aligned *)
+  (loc, Misc.align !ofs 16)  (* keep stack 16-aligned *)
 
-let incoming ofs =
-  if ofs >= 0
-  then Incoming ofs
-  else Domainstate (ofs + size_domainstate_args)
-let outgoing ofs =
-  if ofs >= 0
-  then Outgoing ofs
-  else Domainstate (ofs + size_domainstate_args)
+let incoming ofs = Incoming ofs
+let outgoing ofs = Outgoing ofs
 let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
-let max_arguments_for_tailcalls = 16 (* in regs *) + 64 (* in domain state *)
+let max_arguments_for_tailcalls = 8
 
 let loc_arguments arg =
-    calling_conventions 0 15 100 112 outgoing (- size_domainstate_args) arg
+    calling_conventions 0 7 100 112 outgoing arg
 
 let loc_parameters arg =
-  let (loc, _ofs) =
-    calling_conventions 0 15 100 112 incoming (- size_domainstate_args) arg
+  let (loc, _ofs) = calling_conventions 0 7 100 112 incoming arg
   in loc
 
 let loc_results res =
-  let (loc, _ofs) = calling_conventions 0 15 100 112 not_supported 0 res
+  let (loc, _ofs) = calling_conventions 0 7 100 112 not_supported res
   in loc
 
 (* C calling conventions for ELF32:
@@ -253,7 +245,7 @@ let loc_external_arguments ty_args =
 (* Results are in GPR 3 and FPR 1 *)
 
 let loc_external_results res =
-  let (loc, _ofs) = calling_conventions 0 1 100 100 not_supported 0 res
+  let (loc, _ofs) = calling_conventions 0 1 100 100 not_supported res
   in loc
 
 (* Exceptions are in GPR 3 *)
@@ -322,11 +314,22 @@ let destroyed_at_reloadretaddr = [| phys_reg 11 |]
 
 let safe_register_pressure = function
     Iextcall _ -> 14
-  | _ -> 23
+  | _ -> 22
 
 let max_register_pressure = function
     Iextcall _ -> [| 14; 18 |]
-  | _ -> [| 23; 30 |]
+  | _ -> [| 22; 30 |]
+
+(* Pure operations (without any side effect besides updating their result
+   registers). *)
+
+let op_is_pure = function
+  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | Ispecific(Imultaddf | Imultsubf) -> true
+  | Ispecific _ -> false
+  | _ -> true
 
 (* Layout of the stack *)
 

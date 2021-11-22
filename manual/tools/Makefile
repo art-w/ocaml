@@ -1,28 +1,30 @@
-ROOTDIR = ../..
-include $(ROOTDIR)/Makefile.common
-include $(ROOTDIR)/Makefile.best_binaries
-
-STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
-OCAMLC ?= $(BEST_OCAMLC) $(STDLIBFLAGS)
+TOPDIR=../..
+COMPFLAGS=-I $(OTOPDIR)/otherlibs/str -I $(OTOPDIR)/otherlibs/unix
+include $(TOPDIR)/Makefile.tools
 
 all: texquote2 transf
 
 
-transf: transf.cmo transfmain.cmo
-	$(OCAMLC) $(COMPFLAGS) -o $@ -g $^
+transf: transf.cmo htmltransf.cmo transfmain.cmo
+	$(OCAMLC) -o $@ -g $^
 
-transfmain.cmo: transf.cmo
+transfmain.cmo: transf.cmo htmltransf.cmo
 
 texquote2: texquote2.ml
-	$(OCAMLC) $(COMPFLAGS) -o $@ $<
+	$(OCAMLC) -o $@ $<
 
 %.cmo: %.ml
-	$(OCAMLC) $(COMPFLAGS) -c $<
+	$(OCAMLC) -c $<
 
 %.cmi: %.mli
-	$(OCAMLC) $(COMPFLAGS) -c $<
+	$(OCAMLC) -c $<
+
+%.ml: %.mll
+	$(OCAMLLEX) $<
+
+
 .PHONY: clean
 clean:
 	rm -f *.o *.cm? *.cmx?
-	rm -f transf.ml
+	rm -f transf.ml htmltransf.ml
 	rm -f texquote2 transf

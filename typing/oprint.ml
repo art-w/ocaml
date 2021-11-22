@@ -188,7 +188,6 @@ let print_out_value ppf tree =
     | Oval_string (s, maxlen, kind) ->
        begin try
          let len = String.length s in
-         let maxlen = max maxlen 8 in (* always show a little prefix *)
          let s = if len > maxlen then String.sub s 0 maxlen else s in
          begin match kind with
          | Ostr_bytes -> fprintf ppf "Bytes.of_string %S" s
@@ -329,15 +328,15 @@ and print_simple_out_type ppf =
   | Otyp_abstract | Otyp_open
   | Otyp_sum _ | Otyp_manifest (_, _) -> ()
   | Otyp_record lbls -> print_record_decl ppf lbls
-  | Otyp_module (p, fl) ->
+  | Otyp_module (p, n, tyl) ->
       fprintf ppf "@[<1>(module %a" print_ident p;
       let first = ref true in
-      List.iter
-        (fun (s, t) ->
+      List.iter2
+        (fun s t ->
           let sep = if !first then (first := false; "with") else "and" in
           fprintf ppf " %s type %s = %a" sep s print_out_type t
         )
-        fl;
+        n tyl;
       fprintf ppf ")@]"
   | Otyp_attribute (t, attr) ->
       fprintf ppf "@[<1>(%a [@@%s])@]" print_out_type t attr.oattr_name
@@ -461,8 +460,6 @@ let out_module_type = ref (fun _ -> failwith "Oprint.out_module_type")
 let out_sig_item = ref (fun _ -> failwith "Oprint.out_sig_item")
 let out_signature = ref (fun _ -> failwith "Oprint.out_signature")
 let out_type_extension = ref (fun _ -> failwith "Oprint.out_type_extension")
-let out_functor_parameters =
-  ref (fun _ -> failwith "Oprint.out_functor_parameters")
 
 (* For anonymous functor arguments, the logic to choose between
    the long-form
@@ -487,66 +484,50 @@ let out_functor_parameters =
 (* take a module type that may be a functor type,
    and return the longest prefix list of arguments
    that should be printed in long form. *)
-
-let rec collect_functor_args acc = function
-  | Omty_functor (param, mty_res) ->
-      collect_functor_args (param :: acc) mty_res
-  | non_functor -> (acc, non_functor)
-let collect_functor_args mty =
-  let l, rest = collect_functor_args [] mty in
-  List.rev l, rest
-
-let constructor_of_extension_constructor
-    (ext : out_extension_constructor) : out_constructor
-=
-  {
-    ocstr_name = ext.oext_name;
-    ocstr_args = ext.oext_args;
-    ocstr_return_type = ext.oext_ret_type;
-  }
-
-let split_anon_functor_arguments params =
-  let rec uncollect_anonymous_suffix acc rest = match acc with
-    | Some (None, mty_arg) :: acc ->
-        uncollect_anonymous_suffix acc
-          (Some (None, mty_arg) :: rest)
-    | _ :: _ | [] ->
-        (acc, rest)
+let collect_functor_arguments mty =
+  let rec collect_args acc = function
+    | Omty_functor (param, mty_res) ->
+       collect_args (param :: acc) mty_res
+    | non_functor -> (acc, non_functor)
   in
-  let (acc, rest) = uncollect_anonymous_suffix (List.rev params) [] in
+  let rec uncollect_anonymous_suffix acc rest = match acc with
+      | Some (None, mty_arg) :: acc ->
+          uncollect_anonymous_suffix acc
+            (Omty_functor (Some (None, mty_arg), rest))
+      | _ :: _ | [] ->
+         (acc, rest)
+  in
+  let (acc, non_functor) = collect_args [] mty in
+  let (acc, rest) = uncollect_anonymous_suffix acc non_functor in
   (List.rev acc, rest)
 
 let rec print_out_module_type ppf mty =
   print_out_functor ppf mty
-
-and print_out_functor_parameters ppf l =
-  let print_nonanon_arg ppf = function
-    | None ->
-        fprintf ppf "()"
-    | Some (param, mty) ->
-        fprintf ppf "(%s : %a)"
-          (Option.value param ~default:"_")
-          print_out_module_type mty
-  in
-  let rec print_args ppf = function
-    | [] -> ()
-    | Some (None, mty_arg) :: l ->
-        fprintf ppf "%a ->@ %a"
-          print_simple_out_module_type mty_arg
-          print_args l
-    | _ :: _ as non_anonymous_functor ->
-        let args, anons = split_anon_functor_arguments non_anonymous_functor in
-        fprintf ppf "@[<2>functor@ %a@]@ ->@ %a"
-          (pp_print_list ~pp_sep:pp_print_space print_nonanon_arg) args
-          print_args anons
-  in
-  print_args ppf l
-
-and print_out_functor ppf t =
-  let params, non_functor = collect_functor_args t in
-  fprintf ppf "@[<2>%a%a@]"
-    print_out_functor_parameters params
-    print_simple_out_module_type non_functor
+and print_out_functor ppf = function
+  | Omty_functor _ as t ->
+     let rec print_functor ppf = function
+       | Omty_functor (Some (None, mty_arg), mty_res) ->
+          fprintf ppf "%a ->@ %a"
+            print_simple_out_module_type mty_arg
+            print_functor mty_res
+       | Omty_functor _ as non_anonymous_functor ->
+          let (args, rest) = collect_functor_arguments non_anonymous_functor in
+          let print_arg ppf = function
+            | None ->
+               fprintf ppf "()"
+            | Some (param, mty) ->
+               fprintf ppf "(%s : %a)"
+                 (Option.value param ~default:"_")
+                 print_out_module_type mty
+          in
+          fprintf ppf "@[<2>functor@ %a@]@ ->@ %a"
+            (pp_print_list ~pp_sep:pp_print_space print_arg) args
+            print_functor rest
+       | non_functor ->
+          print_simple_out_module_type ppf non_functor
+     in
+     fprintf ppf "@[<2>%a@]" print_functor t
+  | t -> print_simple_out_module_type ppf t
 and print_simple_out_module_type ppf =
   function
     Omty_abstract -> ()
@@ -570,13 +551,13 @@ and print_out_signature ppf =
         match items with
             Osig_typext(ext, Oext_next) :: items ->
               gather_extensions
-                (constructor_of_extension_constructor ext :: acc)
+                ((ext.oext_name, ext.oext_args, ext.oext_ret_type) :: acc)
                 items
           | _ -> (List.rev acc, items)
       in
       let exts, items =
         gather_extensions
-          [constructor_of_extension_constructor ext]
+          [(ext.oext_name, ext.oext_args, ext.oext_ret_type)]
           items
       in
       let te =
@@ -602,7 +583,7 @@ and print_out_sig_item ppf =
         name !out_class_type clt
   | Osig_typext (ext, Oext_exception) ->
       fprintf ppf "@[<2>exception %a@]"
-        print_out_constr (constructor_of_extension_constructor ext)
+        print_out_constr (ext.oext_name, ext.oext_args, ext.oext_ret_type)
   | Osig_typext (ext, _es) ->
       print_out_extension_constructor ppf ext
   | Osig_modtype (name, Omty_abstract) ->
@@ -712,18 +693,13 @@ and print_out_type_decl kwd ppf td =
     print_immediate
     print_unboxed
 
-and print_out_constr ppf constr =
-  let {
-    ocstr_name = name;
-    ocstr_args = tyl;
-    ocstr_return_type = return_type;
-  } = constr in
+and print_out_constr ppf (name, tyl,ret_type_opt) =
   let name =
     match name with
     | "::" -> "(::)"   (* #7200 *)
     | s -> s
   in
-  match return_type with
+  match ret_type_opt with
   | None ->
       begin match tyl with
       | [] ->
@@ -760,8 +736,7 @@ and print_out_extension_constructor ppf ext =
   fprintf ppf "@[<hv 2>type %t +=%s@;<1 2>%a@]"
     print_extended_type
     (if ext.oext_private = Asttypes.Private then " private" else "")
-    print_out_constr
-    (constructor_of_extension_constructor ext)
+    print_out_constr (ext.oext_name, ext.oext_args, ext.oext_ret_type)
 
 and print_out_type_extension ppf te =
   let print_extended_type ppf =
@@ -788,7 +763,6 @@ let _ = out_module_type := print_out_module_type
 let _ = out_signature := print_out_signature
 let _ = out_sig_item := print_out_sig_item
 let _ = out_type_extension := print_out_type_extension
-let _ = out_functor_parameters := print_out_functor_parameters
 
 (* Phrases *)
 
@@ -811,13 +785,13 @@ let rec print_items ppf =
         match items with
             (Osig_typext(ext, Oext_next), None) :: items ->
               gather_extensions
-                (constructor_of_extension_constructor ext :: acc)
+                ((ext.oext_name, ext.oext_args, ext.oext_ret_type) :: acc)
                 items
           | _ -> (List.rev acc, items)
       in
       let exts, items =
         gather_extensions
-          [constructor_of_extension_constructor ext]
+          [(ext.oext_name, ext.oext_args, ext.oext_ret_type)]
           items
       in
       let te =

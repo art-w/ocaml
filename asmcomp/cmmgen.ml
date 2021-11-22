@@ -424,7 +424,7 @@ let rec transl env e =
       let args = List.map (transl env) args in
       send kind met obj args dbg
   | Ulet(str, kind, id, exp, body) ->
-      transl_let env str kind id exp (fun env -> transl env body)
+      transl_let env str kind id exp body
   | Uphantom_let (var, defining_expr, body) ->
       let defining_expr =
         match defining_expr with
@@ -609,16 +609,8 @@ let rec transl env e =
       let ifso_dbg = Debuginfo.none in
       let ifnot_dbg = Debuginfo.none in
       let dbg = Debuginfo.none in
-      let ifso = transl env ifso in
-      let ifnot = transl env ifnot in
-      let approx =
-        match ifso, ifnot with
-        | Cconst_int (1, _), Cconst_int (3, _) -> Then_false_else_true
-        | Cconst_int (3, _), Cconst_int (1, _) -> Then_true_else_false
-        | _, _ -> Unknown
-      in
-      transl_if env approx dbg cond
-        ifso_dbg ifso ifnot_dbg ifnot
+      transl_if env Unknown dbg cond
+        ifso_dbg (transl env ifso) ifnot_dbg (transl env ifnot)
   | Usequence(exp1, exp2) ->
       Csequence(remove_unit(transl env exp1), transl env exp2)
   | Uwhile(cond, body) ->
@@ -793,7 +785,7 @@ and transl_prim_1 env p arg dbg =
   match p with
   (* Generic operations *)
     Popaque ->
-      opaque (transl env arg) dbg
+      transl env arg
   (* Heap operations *)
   | Pfield n ->
       get_field env (transl env arg) n dbg
@@ -1125,7 +1117,7 @@ and transl_unbox_sized size dbg env exp =
   | Thirty_two -> transl_unbox_int dbg env Pint32 exp
   | Sixty_four -> transl_unbox_int dbg env Pint64 exp
 
-and transl_let env str kind id exp transl_body =
+and transl_let env str kind id exp body =
   let dbg = Debuginfo.none in
   let cexp = transl env exp in
   let unboxing =
@@ -1159,16 +1151,16 @@ and transl_let env str kind id exp transl_body =
       (* N.B. [body] must still be traversed even if [exp] will never return:
          there may be constant closures inside that need lifting out. *)
       begin match str, kind with
-      | Immutable, _ -> Clet(id, cexp, transl_body env)
-      | Mutable, Pintval -> Clet_mut(id, typ_int, cexp, transl_body env)
-      | Mutable, _ -> Clet_mut(id, typ_val, cexp, transl_body env)
+      | Immutable, _ -> Clet(id, cexp, transl env body)
+      | Mutable, Pintval -> Clet_mut(id, typ_int, cexp, transl env body)
+      | Mutable, _ -> Clet_mut(id, typ_val, cexp, transl env body)
       end
   | Boxed (boxed_number, false) ->
       let unboxed_id = V.create_local (VP.name id) in
       let v = VP.create unboxed_id in
       let cexp = unbox_number dbg boxed_number cexp in
       let body =
-        transl_body (add_unboxed_id (VP.var id) unboxed_id boxed_number env) in
+        transl (add_unboxed_id (VP.var id) unboxed_id boxed_number env) body in
       begin match str, boxed_number with
       | Immutable, _ -> Clet (v, cexp, body)
       | Mutable, bn -> Clet_mut (v, typ_of_boxed_number bn, cexp, body)
@@ -1210,9 +1202,6 @@ and transl_if env (approx : then_else)
         ifso_dbg arg2
         then_dbg then_
         else_dbg else_
-  | Ulet(str, kind, id, exp, cond) ->
-      transl_let env str kind id exp (fun env ->
-        transl_if env approx dbg cond then_dbg then_ else_dbg else_)
   | Uprim (Psequand, [arg1; arg2], inner_dbg) ->
       transl_sequand env approx
         inner_dbg arg1
@@ -1383,7 +1372,6 @@ let transl_function f =
              fun_args = List.map (fun (id, _) -> (id, typ_val)) f.params;
              fun_body = cmm_body;
              fun_codegen_options;
-             fun_poll = f.poll;
              fun_dbg  = f.dbg}
 
 (* Translate all function definitions *)
@@ -1485,7 +1473,6 @@ let compunit (ulam, preallocated_blocks, constants) =
                            No_CSE;
                          ]
                          else [ Reduce_code_size ];
-                       fun_poll = Default_poll;
                        fun_dbg  = Debuginfo.none }] in
   let c2 = transl_clambda_constants constants c1 in
   let c3 = transl_all_functions c2 in

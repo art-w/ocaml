@@ -1,7 +1,7 @@
 (* TEST
 * hasunix
 include unix
-readonly_files = "utimes.txt"
+files = "utimes.txt"
 ** bytecode
 ** native
 *)

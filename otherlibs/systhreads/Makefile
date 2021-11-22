@@ -22,20 +22,22 @@ ifneq "$(CCOMPTYPE)" "msvc"
 OC_CFLAGS += -g
 endif
 
-OC_CFLAGS += $(SHAREDLIB_CFLAGS)
+OC_CFLAGS += $(SHAREDLIB_CFLAGS) $(PTHREAD_CFLAGS)
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 
 NATIVE_CPPFLAGS = \
   -DNATIVE_CODE -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM)
 
+CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
+
 LIBS = -nostdlib -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/$(UNIXLIB)
 
 CAMLC=$(BEST_OCAMLC) $(LIBS)
 CAMLOPT=$(BEST_OCAMLOPT) $(LIBS)
 
-MKLIB=$(OCAMLRUN) $(ROOTDIR)/tools/ocamlmklib$(EXE)
-COMPFLAGS=-w +33..39 -warn-error +A -g -bin-annot -safe-string
+MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib$(EXE)
+COMPFLAGS=-w +33..39 -warn-error A -g -bin-annot -safe-string
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
 endif
@@ -66,7 +68,7 @@ all: lib$(LIBNAME).$(A) $(LIBNAME).cma $(CMIFILES)
 allopt: lib$(LIBNAME)nat.$(A) $(LIBNAME).cmxa $(CMIFILES)
 
 lib$(LIBNAME).$(A): $(BYTECODE_C_OBJS)
-	$(MKLIB_CMD) -o $(LIBNAME) $(BYTECODE_C_OBJS) $(PTHREAD_LIBS)
+	$(MKLIB_CMD) -o $(LIBNAME) $(BYTECODE_C_OBJS) $(PTHREAD_LINK)
 
 lib$(LIBNAME)nat.$(A): $(NATIVECODE_C_OBJS)
 	$(MKLIB_CMD) -o $(LIBNAME)nat $^
@@ -74,19 +76,19 @@ lib$(LIBNAME)nat.$(A): $(NATIVECODE_C_OBJS)
 $(LIBNAME).cma: $(THREADS_BCOBJS)
 ifeq "$(UNIX_OR_WIN32)" "unix"
 	$(MKLIB) -o $(LIBNAME) -ocamlc '$(CAMLC)' -cclib -lunix -linkall \
-	  $(PTHREAD_CAML_LIBS) $^
+	  $(PTHREAD_CAML_LINK) $^
 # TODO: Figure out why -cclib -lunix is used here.
 # It may be because of the threadsUnix module which is deprecated.
 # It may hence be good to figure out whether this module shouldn't be
 # removed, and then -cclib -lunix arguments.
 else # Windows
 	$(MKLIB) -o $(LIBNAME) -ocamlc "$(CAMLC)" -linkall \
-	  $(PTHREAD_CAML_LIBS) $^
+	  $(PTHREAD_CAML_LINK) $^
 endif
 
 # See remark above: force static linking of libthreadsnat.a
 $(LIBNAME).cmxa: $(THREADS_NCOBJS)
-	$(CAMLOPT) -linkall -a -cclib -lthreadsnat $(PTHREAD_CAML_LIBS) -o $@ $^
+	$(CAMLOPT) -linkall -a -cclib -lthreadsnat $(PTHREAD_CAML_LINK) -o $@ $^
 
 # Note: I removed "-cclib -lunix" from the line above.
 # Indeed, if we link threads.cmxa, then we must also link unix.cmxa,
@@ -142,13 +144,15 @@ installopt:
 	  "$(INSTALL_THREADSLIBDIR)"
 	cd "$(INSTALL_THREADSLIBDIR)" && $(RANLIB) threads.$(A)
 
-%.cmi: %.mli
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
+
+.mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
-%.cmo: %.ml
+.ml.cmo:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
-%.cmx: %.ml
+.ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 DEP_FILES := st_stubs.b.$(D)
@@ -172,6 +176,6 @@ $(foreach object_type, b n, $(eval $(call GEN_RULE,$(object_type))))
 
 .PHONY: depend
 depend:
-	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml > .depend
+	$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml > .depend
 
 include .depend

@@ -33,10 +33,8 @@ rule token = parse
   | blank * { token lexbuf }
   | newline { Lexing.new_line lexbuf; token lexbuf }
   | "/*" blank* "TEST" { TSL_BEGIN_C_STYLE }
-  | "/*" blank* "TEST_BELOW" _ * "/*" blank* "TEST" { TSL_BEGIN_C_STYLE }
   | "*/" { TSL_END_C_STYLE }
   | "(*" blank* "TEST" { TSL_BEGIN_OCAML_STYLE }
-  | "(*" blank* "TEST_BELOW" _ * "(*" blank* "TEST" { TSL_BEGIN_OCAML_STYLE }
   | "*)" { TSL_END_OCAML_STYLE }
   | "," { COMMA }
   | '*'+ { TEST_DEPTH (String.length (Lexing.lexeme lexbuf)) }
@@ -47,7 +45,6 @@ rule token = parse
       match s with
         | "include" -> INCLUDE
         | "set" -> SET
-        | "unset" -> UNSET
         | "with" -> WITH
         | _ -> IDENTIFIER s
     }

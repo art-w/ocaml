@@ -323,10 +323,7 @@ Line 15, characters 0-69:
 Error: This variant or record definition does not match that of type M.t
        Constructors do not match:
          E of (MkT(M.T).t, MkT(M.T).t) eq
-       is not the same as:
+       is not compatible with:
          E of (MkT(Desc).t, MkT(Desc).t) eq
-       The type (MkT(M.T).t, MkT(M.T).t) eq is not equal to the type
-         (MkT(Desc).t, MkT(Desc).t) eq
-       Type MkT(M.T).t = Set.Make(M.Term0).t is not equal to type
-         MkT(Desc).t = Set.Make(Desc).t
+       The types are not equal.
 |}]

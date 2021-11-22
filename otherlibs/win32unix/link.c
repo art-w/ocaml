@@ -36,7 +36,7 @@ CAMLprim value unix_link(value follow, value path1, value path2)
   tCreateHardLink pCreateHardLink;
   BOOL result;
   wchar_t * wpath1, * wpath2;
-  if (Is_some(follow) && !Bool_val(Some_val(follow))) {
+  if (Is_block(follow) && !Bool_val(Field(follow, 0))) { /* Some false */
     errno = ENOSYS;
     uerror("link", path2);
   }

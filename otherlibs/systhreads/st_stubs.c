@@ -19,7 +19,6 @@
 #include "caml/backtrace.h"
 #include "caml/callback.h"
 #include "caml/custom.h"
-#include "caml/debugger.h"
 #include "caml/domain.h"
 #include "caml/fail.h"
 #include "caml/io.h"
@@ -234,12 +233,6 @@ static void caml_thread_enter_blocking_section(void)
 
 static void caml_thread_leave_blocking_section(void)
 {
-#ifdef _WIN32
-  /* TlsGetValue calls SetLastError which will mask any error which occurred
-     prior to the caml_thread_leave_blocking_section call. EnterCriticalSection
-     does not do this. */
-  DWORD error = GetLastError();
-#endif
   /* Wait until the runtime is free */
   st_masterlock_acquire(&caml_master_lock);
   /* Update curr_thread to point to the thread descriptor corresponding
@@ -247,9 +240,6 @@ static void caml_thread_leave_blocking_section(void)
   curr_thread = st_tls_get(thread_descriptor_key);
   /* Restore the runtime state from the curr_thread descriptor */
   caml_thread_restore_runtime_state();
-#ifdef _WIN32
-  SetLastError(error);
-#endif
 }
 
 /* Hooks for I/O locking */
@@ -533,9 +523,9 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
 
   /* Associate the thread descriptor with the thread */
   st_tls_set(thread_descriptor_key, (void *) th);
+  st_thread_set_id(Ident(th->descr));
   /* Acquire the global mutex */
   caml_leave_blocking_section();
-  st_thread_set_id(Ident(th->descr));
   caml_setup_stack_overflow_detection();
 #ifdef NATIVE_CODE
   /* Setup termination handler (for caml_thread_exit) */
@@ -559,10 +549,6 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
   caml_thread_t th;
   st_retcode err;
 
-#ifndef NATIVE_CODE
-  if (caml_debugger_in_use)
-    caml_fatal_error("ocamldebug does not support multithreaded programs");
-#endif
   /* Create a thread info block */
   th = caml_thread_new_info();
   if (th == NULL) caml_raise_out_of_memory();

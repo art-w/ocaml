@@ -13,7 +13,9 @@
 #*                                                                        *
 #**************************************************************************
 
-MAKECMDGOALS ?= defaultentry
+ifeq "$(MAKECMDGOALS)" ""
+MAKECMDGOALS += defaultentry
+endif
 
 CLEAN_TARGET_NAMES=clean partialclean distclean
 
@@ -21,7 +23,7 @@ CLEAN_TARGET_NAMES=clean partialclean distclean
 # REQUIRES_CONFIGURATION is empty if only those targets are requested,
 # and non-empty if configuration is required.
 REQUIRES_CONFIGURATION := $(strip \
-  $(filter-out $(CLEAN_TARGET_NAMES) configure, $(MAKECMDGOALS)))
+  $(filter-out bench $(CLEAN_TARGET_NAMES) configure, $(MAKECMDGOALS)))
 
 ifneq "$(REQUIRES_CONFIGURATION)" ""
 include $(ROOTDIR)/Makefile.build_config

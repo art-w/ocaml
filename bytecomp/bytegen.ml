@@ -109,7 +109,7 @@ let rec is_tailcall = function
    from the tail call optimization? *)
 
 let preserve_tailcall_for_prim = function
-  | Popaque | Psequor | Psequand ->
+    Pidentity | Popaque | Pdirapply | Prevapply | Psequor | Psequand ->
       true
   | Pbytes_to_string | Pbytes_of_string | Pignore | Pgetglobal _ | Psetglobal _
   | Pmakeblock _ | Pfield _ | Pfield_computed | Psetfield _
@@ -465,17 +465,12 @@ let comp_primitive p args =
   | Pisout -> Kisout
   | Pbintofint bi -> comp_bint_primitive bi "of_int" args
   | Pintofbint bi -> comp_bint_primitive bi "to_int" args
-  | Pcvtbint(src, dst) ->
-      begin match (src, dst) with
-      | (Pint32, Pnativeint) -> Kccall("caml_nativeint_of_int32", 1)
-      | (Pnativeint, Pint32) -> Kccall("caml_nativeint_to_int32", 1)
-      | (Pint32, Pint64) -> Kccall("caml_int64_of_int32", 1)
-      | (Pint64, Pint32) -> Kccall("caml_int64_to_int32", 1)
-      | (Pnativeint, Pint64) -> Kccall("caml_int64_of_nativeint", 1)
-      | (Pint64, Pnativeint) -> Kccall("caml_int64_to_nativeint", 1)
-      | ((Pint32 | Pint64 | Pnativeint), _) ->
-          fatal_error "Bytegen.comp_primitive: invalid Pcvtbint cast"
-      end
+  | Pcvtbint(Pint32, Pnativeint) -> Kccall("caml_nativeint_of_int32", 1)
+  | Pcvtbint(Pnativeint, Pint32) -> Kccall("caml_nativeint_to_int32", 1)
+  | Pcvtbint(Pint32, Pint64) -> Kccall("caml_int64_of_int32", 1)
+  | Pcvtbint(Pint64, Pint32) -> Kccall("caml_int64_to_int32", 1)
+  | Pcvtbint(Pnativeint, Pint64) -> Kccall("caml_int64_of_nativeint", 1)
+  | Pcvtbint(Pint64, Pnativeint) -> Kccall("caml_int64_to_nativeint", 1)
   | Pnegbint bi -> comp_bint_primitive bi "neg" args
   | Paddbint bi -> comp_bint_primitive bi "add" args
   | Psubbint bi -> comp_bint_primitive bi "sub" args
@@ -508,18 +503,7 @@ let comp_primitive p args =
   | Pint_as_pointer -> Kccall("caml_int_as_pointer", 1)
   | Pbytes_to_string -> Kccall("caml_string_of_bytes", 1)
   | Pbytes_of_string -> Kccall("caml_bytes_of_string", 1)
-  (* The cases below are handled in [comp_expr] before the [comp_primitive] call
-     (in the order in which they appear below),
-     so they should never be reached in this function. *)
-  | Pignore | Popaque
-  | Pnot | Psequand | Psequor
-  | Praise _
-  | Pmakearray _ | Pduparray _
-  | Pfloatcomp _
-  | Pmakeblock _
-  | Pfloatfield _
-    ->
-      fatal_error "Bytegen.comp_primitive"
+  | _ -> fatal_error "Bytegen.comp_primitive"
 
 let is_immed n = immed_min <= n && n <= immed_max
 
@@ -540,7 +524,7 @@ module Storer =
 let rec comp_expr env exp sz cont =
   if sz > !max_stack_used then max_stack_used := sz;
   match exp with
-    Lvar id | Lmutvar id ->
+    Lvar id ->
       begin try
         let pos = Ident.find_same id env.ce_stack in
         Kacc(sz - pos) :: cont
@@ -576,7 +560,7 @@ let rec comp_expr env exp sz cont =
         end
       end
   | Lsend(kind, met, obj, args, _) ->
-      assert (kind <> Cached);
+      let args = if kind = Cached then List.tl args else args in
       let nargs = List.length args + 1 in
       let getmethod, args' =
         if kind = Self then (Kgetmethod, met::obj::args) else
@@ -607,8 +591,7 @@ let rec comp_expr env exp sz cont =
       Stack.push to_compile functions_to_compile;
       comp_args env (List.map (fun n -> Lvar n) fv) sz
         (Kclosure(lbl, List.length fv) :: cont)
-  | Llet(_, _k, id, arg, body)
-  | Lmutlet(_k, id, arg, body) ->
+  | Llet(_str, _k, id, arg, body) ->
       comp_expr env arg sz
         (Kpush :: comp_expr (add_var id (sz+1) env) body (sz+1)
           (add_pop 1 cont))
@@ -687,10 +670,21 @@ let rec comp_expr env exp sz cont =
         in
         comp_init env sz decl_size
       end
-  | Lprim(Popaque, [arg], _) ->
+  | Lprim((Pidentity | Popaque), [arg], _) ->
       comp_expr env arg sz cont
   | Lprim(Pignore, [arg], _) ->
       comp_expr env arg sz (add_const_unit cont)
+  | Lprim(Pdirapply, [func;arg], loc)
+  | Lprim(Prevapply, [arg;func], loc) ->
+      let exp = Lapply{
+        ap_loc=loc;
+        ap_func=func;
+        ap_args=[arg];
+        ap_tailcall=Default_tailcall;
+        ap_inlined=Default_inline;
+        ap_specialised=Default_specialise;
+      } in
+      comp_expr env exp sz cont
   | Lprim(Pnot, [arg], _) ->
       let newcont =
         match cont with

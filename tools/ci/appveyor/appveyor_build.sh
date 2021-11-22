@@ -21,7 +21,7 @@ BUILD_PID=0
 CACHE_DIRECTORY=/cygdrive/c/projects/cache
 
 if [[ -z $APPVEYOR_PULL_REQUEST_HEAD_COMMIT ]] ; then
-  MAKE="make -j$NUMBER_OF_PROCESSORS"
+  MAKE="make -j"
 else
   MAKE=make
 fi
@@ -51,26 +51,18 @@ function run {
 # $2: the prefix to use to install
 function set_configuration {
     case "$1" in
-        cygwin*)
-            dep='--disable-dependency-generation'
-        ;;
-        mingw32)
+        mingw)
             build='--build=i686-pc-cygwin'
             host='--host=i686-w64-mingw32'
             dep='--disable-dependency-generation'
         ;;
-        mingw64)
-            build='--build=i686-pc-cygwin'
-            host='--host=x86_64-w64-mingw32'
-            dep='--disable-dependency-generation'
-        ;;
-        msvc32)
+        msvc)
             build='--build=i686-pc-cygwin'
             host='--host=i686-pc-windows'
             dep='--disable-dependency-generation'
         ;;
         msvc64)
-            build='--build=x86_64-pc-cygwin'
+            build='--build=x86_64-unknown-cygwin'
             host='--host=x86_64-pc-windows'
             # Explicitly test dependency generation on msvc64
             dep='--enable-dependency-generation'
@@ -89,32 +81,40 @@ function set_configuration {
 }
 
 APPVEYOR_BUILD_FOLDER=$(echo "$APPVEYOR_BUILD_FOLDER" | cygpath -f -)
-FLEXDLLROOT="$PROGRAMFILES/flexdll"
-OCAMLROOT=$(echo "$OCAMLROOT" | cygpath -f - -m)
+# These directory names are specified here, because getting UTF-8 correctly
+# through appveyor.yml -> Command Script -> Bash is quite painful...
+OCAMLROOT=$(echo "$PROGRAMFILES/Бактріан🐫" | cygpath -f - -m)
 
-if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
-  case "$PORT" in
-    cygwin*) ;;
-    *) export PATH="$FLEXDLLROOT:$PATH";;
-  esac
-fi
+# This must be kept in sync with appveyor_build.cmd
+BUILD_PREFIX=🐫реализация
+
+PATH=$(echo "$OCAMLROOT" | cygpath -f -)/bin/flexdll:$PATH
 
 case "$1" in
   install)
-    if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
-      mkdir -p "$FLEXDLLROOT"
-      cd "$APPVEYOR_BUILD_FOLDER/../flexdll"
-      # The objects are always built from the sources
-      for f in flexdll.h flexlink.exe default*.manifest ; do
-        cp "$f" "$FLEXDLLROOT/"
-      done
+    mkdir -p "$OCAMLROOT/bin/flexdll"
+    cd "$APPVEYOR_BUILD_FOLDER/../flexdll"
+    # msvc64 objects need to be compiled with VS2015, so are copied later from
+    # a source build.
+    for f in flexdll.h flexlink.exe flexdll*_msvc.obj default*.manifest ; do
+      cp "$f" "$OCAMLROOT/bin/flexdll/"
+    done
+    if [[ $PORT = 'msvc64' ]] ; then
+      echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' \
+        >> ~/.bash_profile
     fi
-    case "$PORT" in
-      msvc*)
-        echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' \
-          >> ~/.bash_profile
-        ;;
-    esac
+    ;;
+  msvc32-only)
+    cd "$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-msvc32"
+
+    set_configuration msvc "$OCAMLROOT-msvc32"
+
+    run "$MAKE world" $MAKE world
+    run "$MAKE runtimeopt" $MAKE runtimeopt
+    run "$MAKE -C otherlibs/systhreads libthreadsnat.lib" \
+         $MAKE -C otherlibs/systhreads libthreadsnat.lib
+
+    exit 0
     ;;
   test)
     FULL_BUILD_PREFIX="$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX"
@@ -123,11 +123,6 @@ case "$1" in
       run "Check runtime symbols" \
           "$FULL_BUILD_PREFIX-$PORT/tools/check-symbol-names" \
           $FULL_BUILD_PREFIX-$PORT/runtime/*.a
-    fi
-    if [[ $PORT = 'mingw64' ]] ; then
-      export PATH="$PATH:/usr/x86_64-w64-mingw32/sys-root/mingw/bin"
-    elif [[ $PORT = 'mingw32' ]] ; then
-      export PATH="$PATH:/usr/i686-w64-mingw32/sys-root/mingw/bin"
     fi
     run "test $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" tests
     run "install $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" install
@@ -157,59 +152,40 @@ case "$1" in
     if [[ $PORT = 'msvc64' ]] ; then
       # Ensure that make distclean can be run from an empty tree
       run "$MAKE distclean" $MAKE distclean
-    fi
-
-    if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
       tar -xzf "$APPVEYOR_BUILD_FOLDER/flexdll.tar.gz"
       cd "flexdll-$FLEXDLL_VERSION"
-      $MAKE MSVC_DETECT=0 CHAINS=${PORT%32} support
-      cp -f *.obj "$FLEXDLLROOT/" 2>/dev/null || \
-      cp -f *.o "$FLEXDLLROOT/"
+      $MAKE MSVC_DETECT=0 CHAINS=msvc64 support
+      cp flexdll*_msvc64.obj "$OCAMLROOT/bin/flexdll/"
       cd ..
     fi
 
-    set_configuration "$PORT" "$OCAMLROOT"
+    if [[ $PORT = 'msvc64' ]] ; then
+      set_configuration msvc64 "$OCAMLROOT"
+    else
+      set_configuration mingw "$OCAMLROOT-mingw32"
+    fi
+
+    cd "$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-$PORT"
 
     export TERM=ansi
 
-    case "$BUILD_MODE" in
-      world.opt)
-        set -o pipefail
-        # For an explanation of the sed command, see
-        # https://github.com/appveyor/ci/issues/1824
-        script --quiet --return --command \
-          "$MAKE -C ../$BUILD_PREFIX-$PORT world.opt" \
-          "../$BUILD_PREFIX-$PORT/build.log" |
-            sed -e 's/\d027\[K//g' \
-                -e 's/\d027\[m/\d027[0m/g' \
-                -e 's/\d027\[01\([m;]\)/\d027[1\1/g'
-        rm -f build.log;;
-    steps)
-      run "C deps: runtime" make -j64 -C runtime setup-depend
-      run "C deps: win32unix" make -j64 -C otherlibs/win32unix setup-depend
+    if [[ $PORT = 'mingw32' ]] ; then
+      set -o pipefail
+      # For an explanation of the sed command, see
+      # https://github.com/appveyor/ci/issues/1824
+      script --quiet --return --command \
+        "$MAKE -C ../$BUILD_PREFIX-mingw32 flexdll && "\
+"$MAKE -C ../$BUILD_PREFIX-mingw32 world.opt" \
+        "../$BUILD_PREFIX-mingw32/build.log" |
+          sed -e 's/\d027\[K//g' \
+              -e 's/\d027\[m/\d027[0m/g' \
+              -e 's/\d027\[01\([m;]\)/\d027[1\1/g'
+    else
       run "$MAKE world" $MAKE world
       run "$MAKE bootstrap" $MAKE bootstrap
       run "$MAKE opt" $MAKE opt
-      run "$MAKE opt.opt" $MAKE opt.opt;;
-    C)
-      run "$MAKE world" $MAKE world
-      run "$MAKE runtimeopt" $MAKE runtimeopt
-      run "$MAKE -C otherlibs/systhreads libthreadsnat.lib" \
-           $MAKE -C otherlibs/systhreads libthreadsnat.lib;;
-    *)
-      echo "Unrecognised build: $BUILD_MODE"
-      exit 1
-    esac
-
-    echo DLL base addresses
-    case "$PORT" in
-      *32)
-        ARG='-4';;
-      *64)
-        ARG='-8';;
-    esac
-    find "../$BUILD_PREFIX-$PORT" -type f \( -name \*.dll -o -name \*.so \) | \
-      xargs rebase -i "$ARG"
+      run "$MAKE opt.opt" $MAKE opt.opt
+    fi
 
     ;;
 esac

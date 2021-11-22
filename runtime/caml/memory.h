@@ -36,10 +36,12 @@ extern "C" {
 #endif
 
 CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
-
-/* Variant of [caml_alloc_shr] with explicit profinfo.
-   Equivalent to caml_alloc_shr unless WITH_PROFINFO is true */
+#ifdef WITH_PROFINFO
 CAMLextern value caml_alloc_shr_with_profinfo (mlsize_t, tag_t, intnat);
+#else
+#define caml_alloc_shr_with_profinfo(size, tag, profinfo) \
+  caml_alloc_shr(size, tag)
+#endif /* WITH_PROFINFO */
 
 /* Variant of [caml_alloc_shr] where no memprof sampling is performed. */
 CAMLextern value caml_alloc_shr_no_track_noexc (mlsize_t, tag_t);
@@ -244,9 +246,7 @@ extern void caml_alloc_small_dispatch (intnat wosize, int flags,
 
 /* Deprecated alias for [caml_modify] */
 
-#define Modify(fp,val) \
-  CAML_DEPRECATED("Modify", "caml_modify") \
-  caml_modify((fp), (val))
+#define Modify(fp,val) caml_modify((fp), (val))
 
 #endif /* CAML_INTERNALS */
 

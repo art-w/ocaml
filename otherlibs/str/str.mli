@@ -156,8 +156,7 @@ val matched_group : int -> string -> string
 (** [matched_group n s] returns the substring of [s] that was matched
    by the [n]th group [\(...\)] of the regular expression that was
    matched by the last call to a matching or searching function (see
-   {!Str.matched_string} for details). When [n] is [0], it returns the
-   substring matched by the whole regular expression.
+   {!Str.matched_string} for details).
    The user must make sure that the parameter [s] is the same string
    that was passed to the matching or searching function.
    @raise Not_found if the [n]th group

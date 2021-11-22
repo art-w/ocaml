@@ -2,7 +2,7 @@
 
 include dynlink
 
-readonly_files = "test1_inited_second.ml test1_plugin.ml"
+files = "test1_inited_second.ml test1_plugin.ml"
 
 libraries = ""
 

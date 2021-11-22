@@ -9,16 +9,14 @@ Error: Type declarations do not match:
          type !'a x = private [> `x ] constraint 'a = 'a x
        is not included in
          type 'a x
-       Their parameters differ
-       The type 'b x as 'b is not equal to the type 'a
+       Their constraints differ.
 |}, Principal{|
 Line 1:
 Error: Type declarations do not match:
          type !'a x = private 'a constraint 'a = [> `x ]
        is not included in
          type 'a x
-       Their parameters differ
-       The type [> `x ] is not equal to the type 'a
+       Their constraints differ.
 |}];;
 
 

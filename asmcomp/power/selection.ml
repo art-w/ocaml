@@ -92,5 +92,4 @@ method! select_operation op args dbg =
 
 end
 
-let fundecl ~future_funcnames f =
-  (new selector)#emit_fundecl ~future_funcnames f
+let fundecl f = (new selector)#emit_fundecl f

@@ -36,8 +36,6 @@
 #include "caml/prims.h"
 #include "caml/signals.h"
 
-#include "build_config.h"
-
 #ifndef NATIVE_CODE
 
 /* The table of primitives */
@@ -72,21 +70,12 @@ static c_primitive lookup_primitive(char * name)
   return NULL;
 }
 
-/* Parse the ld.conf file and add the directories
+/* Parse the OCAML_STDLIB_DIR/ld.conf file and add the directories
    listed there to the search path */
 
 #define LD_CONF_NAME T("ld.conf")
 
-CAMLexport char_os * caml_get_stdlib_location(void)
-{
-  char_os * stdlib;
-  stdlib = caml_secure_getenv(T("OCAMLLIB"));
-  if (stdlib == NULL) stdlib = caml_secure_getenv(T("CAMLLIB"));
-  if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
-  return stdlib;
-}
-
-CAMLexport char_os * caml_parse_ld_conf(void)
+static char_os * parse_ld_conf(void)
 {
   char_os * stdlib, * ldconfname, * wconfig, * p, * q;
   char * config;
@@ -97,7 +86,9 @@ CAMLexport char_os * caml_parse_ld_conf(void)
 #endif
   int ldconf, nread;
 
-  stdlib = caml_get_stdlib_location();
+  stdlib = caml_secure_getenv(T("OCAMLLIB"));
+  if (stdlib == NULL) stdlib = caml_secure_getenv(T("CAMLLIB"));
+  if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
   ldconfname = caml_stat_strconcat_os(3, stdlib, T("/"), LD_CONF_NAME);
   if (stat_os(ldconfname, &st) == -1) {
     caml_stat_free(ldconfname);
@@ -178,7 +169,7 @@ void caml_build_primitive_table(char_os * lib_path,
   if (lib_path != NULL)
     for (p = lib_path; *p != 0; p += strlen_os(p) + 1)
       caml_ext_table_add(&caml_shared_libs_path, p);
-  tofree2 = caml_parse_ld_conf();
+  tofree2 = parse_ld_conf();
   /* Open the shared libraries */
   caml_ext_table_init(&shared_libs, 8);
   if (libs != NULL)

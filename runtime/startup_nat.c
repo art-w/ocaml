@@ -124,7 +124,6 @@ value caml_startup_common(char_os **argv, int pooling)
   if (!caml_startup_aux(pooling))
     return Val_unit;
 
-  caml_increase_native_stack_size();
   caml_init_frame_descriptors();
   caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
@@ -136,7 +135,7 @@ value caml_startup_common(char_os **argv, int pooling)
                 caml_init_heap_chunk_sz, caml_init_percent_free,
                 caml_init_max_percent_free, caml_init_major_window,
                 caml_init_custom_major_ratio, caml_init_custom_minor_ratio,
-                caml_init_custom_minor_max_bsz, caml_init_policy);
+                caml_init_custom_minor_max_bsz);
   init_static();
   caml_init_signals();
 #ifdef _WIN32

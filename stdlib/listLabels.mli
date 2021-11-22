@@ -486,7 +486,7 @@ val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
     Not tail-recursive (sum of the lengths of the arguments).
  *)
 
-(** {1 Lists and Sequences} *)
+(** {1 Iterators} *)
 
 val to_seq : 'a list -> 'a Seq.t
 (** Iterate on the list.
@@ -494,6 +494,6 @@ val to_seq : 'a list -> 'a Seq.t
  *)
 
 val of_seq : 'a Seq.t -> 'a list
-(** Create a list from a sequence.
+(** Create a list from the iterator.
     @since 4.07
  *)

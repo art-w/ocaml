@@ -33,10 +33,11 @@ let word_addressed = false
     x0 - x15              general purpose (caller-save)
     x16, x17              temporaries (used by call veeners)
     x18                   platform register (reserved)
-    x19 - x25             general purpose (callee-save)
+    x19 - x24             general purpose (callee-save)
+    x25                   domain state pointer
     x26                   trap pointer
     x27                   alloc pointer
-    x28                   domain state pointer
+    x28                   alloc limit
     x29                   frame pointer
     x30                   return address
     sp / xzr              stack pointer / zero register
@@ -47,11 +48,10 @@ let word_addressed = false
 *)
 
 let int_reg_name =
-  [| "x0";  "x1";  "x2";  "x3";  "x4";  "x5";  "x6";  "x7";  (* 0 - 7 *)
-     "x8";  "x9";  "x10"; "x11"; "x12"; "x13"; "x14"; "x15"; (* 8 - 15 *)
-     "x19"; "x20"; "x21"; "x22"; "x23"; "x24"; "x25";        (* 16 - 22 *)
-     "x26"; "x27"; "x28";                                    (* 23 - 25 *)
-     "x16"; "x17" |]                                         (* 26 - 27 *)
+  [| "x0";  "x1";  "x2";  "x3";  "x4";  "x5";  "x6";  "x7";
+     "x8";  "x9";  "x10"; "x11"; "x12"; "x13"; "x14"; "x15";
+     "x19"; "x20"; "x21"; "x22"; "x23"; "x24";
+     "x25"; "x26"; "x27"; "x28"; "x16"; "x17" |]
 
 let float_reg_name =
   [| "d0";  "d1";  "d2";  "d3";  "d4";  "d5";  "d6";  "d7";
@@ -67,7 +67,7 @@ let register_class r =
   | Float -> 1
 
 let num_available_registers =
-  [| 23; 32 |] (* first 23 int regs allocatable; all float regs allocatable *)
+  [| 22; 32 |] (* first 22 int regs allocatable; all float regs allocatable *)
 
 let first_available_register =
   [| 0; 100 |]
@@ -107,8 +107,6 @@ let stack_slot slot ty =
 
 (* Calling conventions *)
 
-let size_domainstate_args = 64 * size_int
-
 let loc_int last_int make_stack int ofs =
   if !int <= last_int then begin
     let l = phys_reg !int in
@@ -140,11 +138,11 @@ let loc_int32 last_int make_stack int ofs =
   end
 
 let calling_conventions
-    first_int last_int first_float last_float make_stack first_stack arg =
+    first_int last_int first_float last_float make_stack arg =
   let loc = Array.make (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
-  let ofs = ref first_stack in
+  let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i) with
     | Val | Int | Addr ->
@@ -152,40 +150,31 @@ let calling_conventions
     | Float ->
         loc.(i) <- loc_float last_float make_stack float ofs
   done;
-  (loc, Misc.align (max 0 !ofs) 16)  (* keep stack 16-aligned *)
+  (loc, Misc.align !ofs 16)  (* keep stack 16-aligned *)
 
-let incoming ofs =
-  if ofs >= 0
-  then Incoming ofs
-  else Domainstate (ofs + size_domainstate_args)
-let outgoing ofs =
-  if ofs >= 0
-  then Outgoing ofs
-  else Domainstate (ofs + size_domainstate_args)
+let incoming ofs = Incoming ofs
+let outgoing ofs = Outgoing ofs
 let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
 (* OCaml calling convention:
      first integer args in r0...r15
      first float args in d0...d15
-     remaining args in domain state area, then on stack.
+     remaining args on stack.
    Return values in r0...r15 or d0...d15. *)
 
-let max_arguments_for_tailcalls = 16 (* in regs *) + 64 (* in domain state *)
-
+let max_arguments_for_tailcalls = 16
 let last_int_register = if macosx then 7 else 15
 
 let loc_arguments arg =
-  calling_conventions 0 last_int_register 100 115
-                      outgoing (- size_domainstate_args) arg
+  calling_conventions 0 last_int_register 100 115 outgoing arg
 let loc_parameters arg =
   let (loc, _) =
-    calling_conventions 0 last_int_register 100 115
-                        incoming (- size_domainstate_args) arg
+    calling_conventions 0 last_int_register 100 115 incoming arg
   in
   loc
 let loc_results res =
   let (loc, _) =
-    calling_conventions 0 last_int_register 100 115 not_supported 0 res
+    calling_conventions 0 last_int_register 100 115 not_supported res
   in
   loc
 
@@ -219,7 +208,7 @@ let loc_external_arguments ty_args =
   external_calling_conventions 0 7 100 107 outgoing ty_args
 
 let loc_external_results res =
-  let (loc, _) = calling_conventions 0 1 100 100 not_supported 0 res in loc
+  let (loc, _) = calling_conventions 0 1 100 100 not_supported res in loc
 
 let loc_exn_bucket = phys_reg 0
 
@@ -267,10 +256,9 @@ let destroyed_at_oper = function
       all_phys_regs
   | Iop(Iextcall { alloc = false; }) ->
       destroyed_at_c_call
-  | Iop(Ialloc _) | Iop(Ipoll _) ->
+  | Iop(Ialloc _) ->
       [| reg_x8 |]
-  | Iop( Iintoffloat | Ifloatofint
-       | Iload(Single, _, _) | Istore(Single, _, _)) ->
+  | Iop(Iintoffloat | Ifloatofint | Iload(Single, _) | Istore(Single, _, _)) ->
       [| reg_d7 |]            (* d7 / s7 destroyed *)
   | _ -> [||]
 
@@ -281,16 +269,26 @@ let destroyed_at_reloadretaddr = [| |]
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-  | Iextcall _ -> 7
-  | Ialloc _ | Ipoll _ -> 22
-  | _ -> 23
+  | Iextcall _ -> 8
+  | Ialloc _ -> 24
+  | _ -> 25
 
 let max_register_pressure = function
-  | Iextcall _ -> [| 7; 8 |]  (* 7 integer callee-saves, 8 FP callee-saves *)
-  | Ialloc _ | Ipoll _ -> [| 22; 32 |]
+  | Iextcall _ -> [| 10; 8 |]
+  | Ialloc _ -> [| 24; 32 |]
   | Iintoffloat | Ifloatofint
-  | Iload(Single, _, _) | Istore(Single, _, _) -> [| 23; 31 |]
-  | _ -> [| 23; 32 |]
+  | Iload(Single, _) | Istore(Single, _, _) -> [| 25; 31 |]
+  | _ -> [| 25; 32 |]
+
+(* Pure operations (without any side effect besides updating their result
+   registers). *)
+
+let op_is_pure = function
+  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
+  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _)
+  | Ispecific(Ishiftcheckbound _) -> false
+  | _ -> true
 
 (* Layout of the stack *)
 let frame_required fd =

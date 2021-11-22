@@ -1,5 +1,5 @@
 (* TEST
-readonly_files = "pr3918a.mli pr3918b.mli"
+files = "pr3918a.mli pr3918b.mli"
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte
 module = "pr3918a.mli"

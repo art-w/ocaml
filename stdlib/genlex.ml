@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "-3"] (* ignore deprecation warning about module Stream *)
-
 type token =
     Kwd of string
   | Ident of string

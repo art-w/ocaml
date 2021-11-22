@@ -146,6 +146,7 @@ type memory_chunk =
   | Word_val
   | Single
   | Double
+  | Double_u
 
 and operation =
     Capply of machtype
@@ -164,7 +165,6 @@ and operation =
   | Ccmpf of float_comparison
   | Craise of Lambda.raise_kind
   | Ccheckbound
-  | Copaque
 
 type expression =
     Cconst_int of int * Debuginfo.t
@@ -203,7 +203,6 @@ type fundecl =
     fun_args: (Backend_var.With_provenance.t * machtype) list;
     fun_body: expression;
     fun_codegen_options : codegen_option list;
-    fun_poll: Lambda.poll_attribute;
     fun_dbg : Debuginfo.t;
   }
 

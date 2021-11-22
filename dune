@@ -13,8 +13,8 @@
 ;**************************************************************************
 
 (env
- (dev     (flags (:standard -w +a-4-9-40-41-42-44-45-48-66-67-70)))
- (release (flags (:standard -w +a-4-9-40-41-42-44-45-48-66-67-70))))
+ (dev     (flags (:standard -w +a-4-9-40-41-42-44-45-48)))
+ (release (flags (:standard -w +a-4-9-40-41-42-44-45-48))))
 
 ;; Too annoying to get to work. Use (copy_files# ...) instead
 ; (include_subdirs unqualified)
@@ -26,6 +26,7 @@
 (copy_files# bytecomp/*.ml{,i})
 (copy_files# driver/*.ml{,i})
 (copy_files# asmcomp/*.ml{,i})
+(copy_files# asmcomp/debug/*.ml{,i})
 (copy_files# file_formats/*.ml{,i})
 (copy_files# lambda/*.ml{,i})
 (copy_files# middle_end/*.ml{,i})
@@ -36,7 +37,7 @@
 (library
  (name ocamlcommon)
  (wrapped false)
- (flags (:standard -principal -nostdlib \ -short-paths))
+ (flags (:standard -principal -nostdlib))
  (libraries stdlib)
  (modules_without_implementation
    annot asttypes cmo_format outcometree parsetree)
@@ -45,7 +46,6 @@
    config build_path_prefix_map misc identifiable numbers arg_helper clflags
    profile terminfo ccomp warnings consistbl strongly_connected_components
    targetint load_path int_replace_polymorphic_compare binutils local_store
-   lazy_backtrack diffing diffing_with_keys
 
    ;; PARSING
    location longident docstrings syntaxerr ast_helper camlinternalMenhirLib
@@ -55,11 +55,10 @@
    asttypes parsetree
 
    ;; TYPING
-   ident path primitive shape types btype oprint subst predef datarepr
-   cmi_format persistent_env env type_immediacy errortrace
+   ident path primitive types btype oprint subst predef datarepr
+   cmi_format persistent_env env type_immediacy
    typedtree printtyped ctype printtyp includeclass mtype envaux includecore
-   tast_iterator tast_mapper signature_group cmt_format untypeast
-   includemod includemod_errorprinter
+   tast_iterator tast_mapper cmt_format untypeast includemod
    typetexp patterns printpat parmatch stypes typedecl typeopt rec_check
    typecore
    typeclass typemod typedecl_variance typedecl_properties typedecl_immediacy
@@ -68,7 +67,7 @@
    annot outcometree
 
    ;; lambda/
-   debuginfo lambda matching printlambda runtimedef tmc simplif switch
+   debuginfo lambda matching printlambda runtimedef simplif switch
    translattribute translclass translcore translmod translobj translprim
 
    ;; bytecomp/
@@ -92,7 +91,7 @@
     bytegen bytelibrarian bytelink bytepackager emitcode printinstr
 
     ;; driver/
-    errors compile maindriver
+    errors compile
  ))
 
 (library
@@ -145,28 +144,23 @@
  (wrapped false)
  (flags (:standard -principal -nostdlib))
  (libraries stdlib ocamlcommon ocamlmiddleend)
- (modules_without_implementation x86_ast emitenv)
+ (modules_without_implementation x86_ast)
  (modules
    ;; asmcomp/
    afl_instrument arch asmgen asmlibrarian asmlink asmpackager branch_relaxation
    branch_relaxation_intf cmm_helpers cmm cmmgen cmmgen_state coloring comballoc
-   cmm_invariants
    CSE CSEgen
-   dataflow deadcode domainstate
-   emit emitaux emitenv
-   interf interval
-   linear linearize linscan
-   liveness mach
-   polling printcmm printlinear printmach proc
-   reg reload reloadgen
+   deadcode domainstate emit emitaux interf interval linear linearize linscan
+   liveness mach printcmm printlinear printmach proc reg reload reloadgen
    schedgen scheduling selectgen selection spill split
    strmatch x86_ast x86_dsl x86_gas x86_masm x86_proc
 
-   ;; file_formats/
-   linear_format
+   ;; asmcomp/debug/
+   reg_availability_set compute_ranges_intf available_regs reg_with_debug_info
+   compute_ranges
 
    ;; driver/
-   optcompile opterrors optmaindriver
+   optcompile opterrors
  )
 )
 

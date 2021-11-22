@@ -37,6 +37,7 @@ type var_info =
     linear_let_bound_vars : V.Set.t;
     assigned : V.Set.t;
     closure_environment : V.Set.t;
+    let_bound_vars_that_can_be_moved : V.Set.t;
   }
 
 let ignore_uconstant (_ : Clambda.uconstant) = ()
@@ -141,7 +142,7 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
     | Uclosure (functions, captured_variables) ->
       List.iter (loop ~depth) captured_variables;
       List.iter (fun (
-        { Clambda. label; arity; params; return; body; dbg; env; _ } as clos) ->
+        { Clambda. label; arity; params; return; body; dbg; env; } as clos) ->
           (match closure_environment_var clos with
            | None -> ()
            | Some env_var ->
@@ -243,6 +244,7 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
   in
   { used_let_bound_vars; linear_let_bound_vars; assigned;
     closure_environment = !environment_vars;
+    let_bound_vars_that_can_be_moved = V.Set.empty;
   }
 
 (* When sequences of [let]-bindings match the evaluation order in a subsequent
@@ -308,8 +310,7 @@ let let_bound_vars_that_can_be_moved var_info (clam : Clambda.ulambda) =
     | Uclosure (functions, captured_variables) ->
       ignore_ulambda_list captured_variables;
       (* Start a new let stack for speed. *)
-      List.iter
-        (fun {Clambda. label; arity; params; return; body; dbg; env; _} ->
+      List.iter (fun {Clambda. label; arity; params; return; body; dbg; env} ->
           ignore_function_label label;
           ignore_int arity;
           ignore_params_with_value_kind params;

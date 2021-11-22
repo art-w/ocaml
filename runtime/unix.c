@@ -29,11 +29,8 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
-#include <sys/time.h>
-#include <sys/resource.h>
 #include "caml/config.h"
-#if defined(SUPPORT_DYNAMIC_LINKING) && !defined(BUILDING_LIBCAMLRUNS)
-#define WITH_DYNAMIC_LINKING
+#ifdef SUPPORT_DYNAMIC_LINKING
 #ifdef __CYGWIN__
 #include "flexdll.h"
 #else
@@ -228,7 +225,7 @@ caml_stat_string caml_search_dll_in_path(struct ext_table * path,
   return res;
 }
 
-#ifdef WITH_DYNAMIC_LINKING
+#ifdef SUPPORT_DYNAMIC_LINKING
 #ifdef __CYGWIN__
 /* Use flexdll */
 
@@ -259,7 +256,7 @@ char * caml_dlerror(void)
   return flexdll_dlerror();
 }
 
-#else /* ! __CYGWIN__ */
+#else
 /* Use normal dlopen */
 
 #ifndef RTLD_GLOBAL
@@ -299,7 +296,7 @@ char * caml_dlerror(void)
   return (char*) dlerror();
 }
 
-#endif /* __CYGWIN__ */
+#endif
 #else
 
 void * caml_dlopen(char * libname, int for_execution, int global)
@@ -326,7 +323,7 @@ char * caml_dlerror(void)
   return "dynamic loading not supported on this platform";
 }
 
-#endif /* WITH_DYNAMIC_LINKING */
+#endif
 
 /* Add to [contents] the (short) names of the files contained in
    the directory named [dirname].  No entries are added for [.] and [..].
@@ -434,31 +431,5 @@ int caml_num_rows_fd(int fd)
     return -1;
 #else
   return -1;
-#endif
-}
-
-void caml_increase_native_stack_size(void)
-{
-#ifdef RLIMIT_STACK
-  struct rlimit lim;
-  rlim_t newlim;
-  if (getrlimit(RLIMIT_STACK, &lim) == -1) return;
-  newlim = lim.rlim_max;
-  if (newlim == RLIM_INFINITY) {
-#ifdef ARCH_SIXTYFOUR
-    newlim = 1024*1024*1024; /* 1G */
-#else
-    newlim = 16*1024*1024; /* 16M */
-#endif
-  }
-  if (lim.rlim_cur >= newlim) return;
-  lim.rlim_cur = newlim;
-  if (setrlimit(RLIMIT_STACK, &lim) == -1) {
-    caml_gc_message(0x08, "Failed to increase native stack size\n");
-  } else {
-    caml_gc_message(0x08, "Increased native stack size to "
-                          "%"ARCH_INT64_PRINTF_FORMAT"u\n",
-                    (ARCH_UINT64_TYPE) newlim);
-  }
 #endif
 }

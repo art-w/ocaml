@@ -25,7 +25,7 @@ rm -f /tmp/env-$USER.sh
 cat >/tmp/env-$USER.sh <<EOF
 # Update the data below
 export MAJOR=4
-export MINOR=12
+export MINOR=08
 export BUGFIX=0
 export PLUSEXT=
 
@@ -40,7 +40,6 @@ export WORKTREE=~/o/\$MAJOR.\$MINOR
 
 export BRANCH=\$MAJOR.\$MINOR
 export VERSION=\$MAJOR.\$MINOR.\$BUGFIX\$PLUSEXT
-export TAGVERSION=\`echo \$VERSION | sed s/\~/-/g\`
 
 export REPO=https://github.com/ocaml/ocaml
 
@@ -132,13 +131,13 @@ git commit -a -m "last commit before tagging $VERSION"
 # update VERSION with the new release; for example,
 #   4.07.0+dev9-2018-06-26 => 4.07.0+rc2
 # Update ocaml-variants.opam with new version.
-# Update \year in manual/src/macros.hva
+# Update \year in manual/manual/macros.hva
 make -B configure
 # For a production release
 make coreboot -j5
 make coreboot -j5 # must say "Fixpoint reached, bootstrap succeeded."
 git commit -m "release $VERSION" -a
-git tag -m "release $VERSION" $TAGVERSION
+git tag -m "release $VERSION" $VERSION
 
 # for production releases, change the VERSION file into (N+1)+dev0; for example,
 #   4.08.0 => 4.08.1+dev0
@@ -170,7 +169,7 @@ git branch $BRANCH
 make -B configure
 # Add a "Working version" section" to Changes
 # Add common subsections in Changes, see Changelog.
-git commit -m "first commit after branching $BRANCH" -a
+git commit -m "first commit after branching $VERSION" -a
 git push
 
 # Switch to the new branch
@@ -204,7 +203,8 @@ Remove the oldest branch from this list.
 ## 5.4 new badge in README.adoc (for a new release branch)
 
 Add a badge for the new branch in README.adoc.
-Remove the oldest badge.
+Remove any badge that tracks a version older than Debian stable.
+
 
 ## 6: create OPAM packages
 
@@ -218,22 +218,8 @@ Create a branch for the new release
 git checkout -b OCaml_$VERSION
 ```
 
-The following opam packages are needed for all releases:
-
-- `ocaml-base-compiler.$VERSION`
-- `ocaml-variants.$VERSION+options`
-
-For production release, the following packages need to be updated:
-
-- `ocaml-system.$VERSION`
-- `ocaml-src.$VERSION`
-- `ocaml-src.$MAJOR.$MINOR.dev`
-- `ocaml-manual.$VERSION`
-- `ocaml.$NEXTVERSION`
-
-Note that the `ocaml` virtual package needs to be updated to the next version.
-
-Similarly, the `ocurrent/ocaml-version` library should be updated.
+Create ocaml-variants packages for the new version, copying the particular
+switch configuration choices from the previous version.
 
 Do not forget to add/update the checksum field for the tarballs in the
 "url" section of the opam files. Use opam-lint before sending the pull
@@ -269,7 +255,7 @@ The synopsis should be "latest $VERSION development(,...)".
 ```
 cd $WORKTREE
 TMPDIR=/tmp/ocaml-release
-git checkout $TAGVERSION
+git checkout $VERSION
 git checkout-index -a -f --prefix=$TMPDIR/ocaml-$VERSION/
 cd $TMPDIR
 $TAR -c --owner 0 --group 0 -f ocaml-$VERSION.tar ocaml-$VERSION

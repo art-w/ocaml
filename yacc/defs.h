@@ -30,7 +30,6 @@
 #include "caml/config.h"
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
-#include "caml/misc.h"
 
 #define caml_stat_strdup strdup
 

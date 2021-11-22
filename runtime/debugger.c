@@ -66,20 +66,10 @@ CAMLexport void caml_debugger_cleanup_fork(void)
 #include <netdb.h>
 #else
 #define ATOM ATOM_WS
-#include <winsock2.h>
+#include <winsock.h>
 #undef ATOM
-/* Code duplication with otherlibs/unix/socketaddr.h is inevitable
- * because pulling winsock2.h creates many naming conflicts. */
-#ifdef HAS_AFUNIX_H
-#include <afunix.h>
-#else
-struct sockaddr_un {
-  ADDRESS_FAMILY sun_family;
-  char sun_path[108];
-};
-#endif /* HAS_AFUNIX_H */
 #include <process.h>
-#endif /* _WIN32 */
+#endif
 
 #include "caml/fail.h"
 #include "caml/fix_code.h"
@@ -95,7 +85,9 @@ static value marshal_flags = Val_emptylist;
 static int sock_domain;         /* Socket domain for the debugger */
 static union {                  /* Socket address for the debugger */
   struct sockaddr s_gen;
+#ifndef _WIN32
   struct sockaddr_un s_unix;
+#endif
   struct sockaddr_in s_inet;
 } sock_addr;
 static int sock_addr_len;       /* Length of sock_addr */
@@ -111,35 +103,50 @@ static struct skiplist event_points_table = SKIPLIST_STATIC_INITIALIZER;
 static void open_connection(void)
 {
 #ifdef _WIN32
-  /* Set socket to synchronous mode (= non-overlapped) so that file
-     descriptor-oriented functions (read()/write() etc.) can be
-     used */
-  SOCKET sock = WSASocket(sock_domain, SOCK_STREAM, 0,
-                          NULL, 0,
-                          0 /* not WSA_FLAG_OVERLAPPED */);
-  if (sock == INVALID_SOCKET
-      || connect(sock, &sock_addr.s_gen, sock_addr_len) != 0)
-    caml_fatal_error("cannot connect to debugger at %s\n"
-                     "WSA error code: %d",
-                     (dbg_addr ? dbg_addr : "(none)"),
-                     WSAGetLastError());
-  dbg_socket = _open_osfhandle(sock, 0);
-  if (dbg_socket == -1)
-#else
-  dbg_socket = socket(sock_domain, SOCK_STREAM, 0);
-  if (dbg_socket == -1 ||
-      connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1)
+  /* Set socket to synchronous mode so that file descriptor-oriented
+     functions (read()/write() etc.) can be used */
+
+  int oldvalue, oldvaluelen, newvalue, retcode;
+  oldvaluelen = sizeof(oldvalue);
+  retcode = getsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
+                       (char *) &oldvalue, &oldvaluelen);
+  if (retcode == 0) {
+      newvalue = SO_SYNCHRONOUS_NONALERT;
+      setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
+                 (char *) &newvalue, sizeof(newvalue));
+  }
 #endif
-    caml_fatal_error("cannot connect to debugger at %s\n"
-                     "error: %s",
-                     (dbg_addr ? dbg_addr : "(none)"),
-                     strerror (errno));
+  dbg_socket = socket(sock_domain, SOCK_STREAM, 0);
+#ifdef _WIN32
+  if (retcode == 0) {
+    /* Restore initial mode */
+    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
+               (char *) &oldvalue, oldvaluelen);
+  }
+#endif
+  if (dbg_socket == -1 ||
+      connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1){
+    caml_fatal_error
+    (
+      "cannot connect to debugger at %s\n"
+      "error: %s",
+      (dbg_addr ? dbg_addr : "(none)"),
+      strerror (errno)
+    );
+  }
+#ifdef _WIN32
+  dbg_socket = _open_osfhandle(dbg_socket, 0);
+  if (dbg_socket == -1)
+    caml_fatal_error("_open_osfhandle failed");
+#endif
   dbg_in = caml_open_descriptor_in(dbg_socket);
   dbg_out = caml_open_descriptor_out(dbg_socket);
   /* The code in this file does not bracket channel I/O operations with
-     Lock and Unlock, but this is safe because the debugger only works
-     with single-threaded programs.  The program being debugged
-     will abort when it creates a thread. */
+     Lock and Unlock, so fail if those are not no-ops. */
+  if (caml_channel_mutex_lock != NULL ||
+      caml_channel_mutex_unlock != NULL ||
+      caml_channel_mutex_unlock_exn != NULL)
+    caml_fatal_error("debugger does not support channel locks");
   if (!caml_debugger_in_use) caml_putword(dbg_out, -1); /* first connection */
 #ifdef _WIN32
   caml_putword(dbg_out, _getpid());
@@ -174,6 +181,7 @@ void caml_debugger_init(void)
 {
   char * address;
   char_os * a;
+  size_t a_len;
   char * port, * p;
   struct hostent * host;
   int n;
@@ -208,7 +216,7 @@ void caml_debugger_init(void)
     if (*p == ':') { *p = 0; port = p+1; break; }
   }
   if (port == NULL) {
-    size_t a_len;
+#ifndef _WIN32
     /* Unix domain */
     sock_domain = PF_UNIX;
     sock_addr.s_unix.sun_family = AF_UNIX;
@@ -225,6 +233,9 @@ void caml_debugger_init(void)
     sock_addr_len =
       ((char *)&(sock_addr.s_unix.sun_path) - (char *)&(sock_addr.s_unix))
         + a_len;
+#else
+    caml_fatal_error("unix sockets not supported");
+#endif
   } else {
     /* Internet domain */
     sock_domain = PF_INET;

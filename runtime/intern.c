@@ -511,8 +511,7 @@ static void intern_rec(value *dest)
           const value * function_placeholder =
             caml_named_value ("Debugger.function_placeholder");
           if (function_placeholder != NULL) {
-            /* Use the code pointer from the "placeholder" function */
-            v = (value) Code_val(*function_placeholder);
+            v = *function_placeholder;
           } else {
             intern_cleanup();
             intern_bad_code_pointer(digest);

@@ -200,16 +200,16 @@ val fast_sort : cmp:(float -> float -> int) -> t -> unit
 (** Same as {!sort} or {!stable_sort}, whichever is faster
     on typical input. *)
 
-(** {2 Float arrays and Sequences} *)
+(** {2 Iterators} *)
 
 val to_seq : t -> float Seq.t
 (** Iterate on the floatarray, in increasing order. Modifications of the
-    floatarray during iteration will be reflected in the sequence. *)
+    floatarray during iteration will be reflected in the iterator. *)
 
 val to_seqi : t -> (int * float) Seq.t
 (** Iterate on the floatarray, in increasing order, yielding indices along
     elements. Modifications of the floatarray during iteration will be
-    reflected in the sequence. *)
+    reflected in the iterator. *)
 
 val of_seq : float Seq.t -> t
 (** Create an array from the generator. *)

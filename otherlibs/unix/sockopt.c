@@ -205,21 +205,24 @@ unix_getsockopt_aux(char * name,
     return Val_int(optval.i);
   case TYPE_LINGER:
     if (optval.lg.l_onoff == 0) {
-      return Val_none;
+      return Val_int(0);        /* None */
     } else {
-      return caml_alloc_some(Val_int(optval.lg.l_linger));
+      value res = caml_alloc_small(1, 0); /* Some */
+      Field(res, 0) = Val_int(optval.lg.l_linger);
+      return res;
     }
   case TYPE_TIMEVAL:
     return caml_copy_double((double) optval.tv.tv_sec
                        + (double) optval.tv.tv_usec / 1e6);
   case TYPE_UNIX_ERROR:
     if (optval.i == 0) {
-      return Val_none;
+      return Val_int(0);        /* None */
     } else {
       value err, res;
       err = unix_error_of_code(optval.i);
       Begin_root(err);
-        res = caml_alloc_some(err);
+        res = caml_alloc_small(1, 0); /* Some */
+        Field(res, 0) = err;
       End_roots();
       return res;
     }
@@ -245,9 +248,9 @@ unix_setsockopt_aux(char * name,
     break;
   case TYPE_LINGER:
     optsize = sizeof(optval.lg);
-    optval.lg.l_onoff = Is_some(val);
+    optval.lg.l_onoff = Is_block (val);
     if (optval.lg.l_onoff)
-      optval.lg.l_linger = Int_val(Some_val(val));
+      optval.lg.l_linger = Int_val (Field (val, 0));
     break;
   case TYPE_TIMEVAL:
     f = Double_val(val);

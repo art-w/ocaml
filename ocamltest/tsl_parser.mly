@@ -37,7 +37,7 @@ let mkenvstmt envstmt =
 %token <int> TEST_DEPTH
 %token EQUAL PLUSEQUAL
 /* %token COLON */
-%token INCLUDE SET UNSET WITH
+%token INCLUDE SET WITH
 %token <string> IDENTIFIER
 %token <string> STRING
 
@@ -76,8 +76,6 @@ env_item:
     { mkenvstmt (Append ($1, $3)) }
 | SET identifier EQUAL string
     { mkenvstmt (Assignment (true, $2, $4)) }
-| UNSET identifier
-    { mkenvstmt (Unset $2) }
 
 | INCLUDE identifier
   { mkenvstmt (Include $2) }
