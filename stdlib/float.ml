@@ -161,8 +161,10 @@ module Array = struct
   let unsafe_fill a ofs len v =
     for i = ofs to ofs + len - 1 do unsafe_set a i v done
 
-  external unsafe_blit: t -> int -> t -> int -> int -> unit =
-    "caml_floatarray_blit" [@@noalloc]
+  let unsafe_blit src sofs dst dofs len =
+    for i = 0 to len - 1 do
+      unsafe_set dst (dofs + i) (unsafe_get src (sofs + i))
+    done
 
   let check a ofs len msg =
     if ofs < 0 || len < 0 || ofs + len < 0 || ofs + len > length a then

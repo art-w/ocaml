@@ -126,7 +126,7 @@ let check_distrib lo hi cnt rate =
       alloc_minor = (fun info ->
         assert (info.size >= lo && info.size <= hi);
         assert (info.n_samples > 0);
-        assert (info.source = Normal);
+        assert (not info.unmarshalled);
         smp := !smp + info.n_samples;
         None
       );

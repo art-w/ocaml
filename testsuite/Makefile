@@ -58,9 +58,8 @@ else
   ifeq "$(FLEXLINK_ENV)" ""
     ocamltest := MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) $(ocamltest_program)
   else
-    FLEXLINK_DLL_LDFLAGS=$(if $(OC_DLL_LDFLAGS), -link "$(OC_DLL_LDFLAGS)")
     MKDLL=$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe \
-                                     $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
+                                     $(FLEXLINK_FLAGS)
 
     ocamltest := $(FLEXLINK_ENV) MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) \
                                  $(ocamltest_program)
@@ -143,6 +142,7 @@ all-%: lib tools
 	@for dir in tests/$**; do \
 	  $(MAKE) --no-print-directory exec-one DIR=$$dir; \
 	done 2>&1 | tee $(TESTLOG)
+	@$(MAKE) --no-print-directory retries
 	@$(MAKE) report
 
 # The targets below use GNU parallel to parallelize tests
@@ -183,6 +183,7 @@ parallel-%: lib tools
 	 | parallel --gnu --no-notice --keep-order \
 	     "$(MAKE) --no-print-directory exec-one DIR={} 2>&1" \
 	 | tee $(TESTLOG)
+	@$(MAKE) --no-print-directory retries
 	@$(MAKE) report
 
 .PHONY: parallel
@@ -221,6 +222,7 @@ one: lib tools
      while IFS='' read -r LINE; do \
        $(MAKE) --no-print-directory exec-one DIR=$$LINE ; \
      done < $$LIST 2>&1 | tee $(TESTLOG) ; \
+     $(MAKE) --no-print-directory retries ; \
      $(MAKE) report ; fi
 
 .PHONY: benchmarks
@@ -305,3 +307,23 @@ clean:
 report:
 	@if [ ! -f $(TESTLOG) ]; then echo "No $(TESTLOG) file."; exit 1; fi
 	@$(AWK) -f ./summarize.awk < $(TESTLOG)
+
+.PHONY: retry-list
+retry-list:
+	@while IFS='' read -r LINE; do \
+	  if [ -n "$$LINE" ] ; then \
+	    echo re-ran $$LINE>> $(TESTLOG); \
+	    $(MAKE) --no-print-directory clean-one DIR=$$LINE; \
+	    $(MAKE) --no-print-directory exec-one DIR=$$LINE 2>&1 \
+	      | tee -a $(TESTLOG) ; \
+	  fi \
+	done <_retries;
+	@$(MAKE) --no-print-directory retries
+
+.PHONY: retries
+retries:
+	@$(AWK) -v retries=1 -v max_retries=$(MAX_TESTSUITE_DIR_RETRIES) \
+	     -f ./summarize.awk < $(TESTLOG) > _retries
+	@test `cat _retries | wc -l` -eq 0 || \
+	  $(MAKE) --no-print-directory retry-list
+	@rm -f _retries

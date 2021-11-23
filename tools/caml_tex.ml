@@ -22,8 +22,8 @@ open Str
 let camlprefix = "caml"
 
 let latex_escape s = String.concat "" ["$"; s; "$"]
-let toplevel_prompt= latex_escape {|\?|} ^ " "
-
+let camlin = latex_escape {|\\?|} ^ {|\1|}
+let camlout = latex_escape {|\\:|} ^ {|\1|}
 let camlbunderline = "<<"
 let camleunderline = ">>"
 
@@ -573,13 +573,6 @@ module Ellipsis = struct
 
 end
 
-let format_input mode s =  match mode with
-  | Verbatim | Signature -> s
-  | Toplevel ->
-      match String.split_on_char '\n' s with
-      | [] -> assert false
-      | a :: q -> String.concat ~sep:"\n  " ((toplevel_prompt^a)::q)
-
 let process_file file =
   let ic = try open_in file with _ -> failwith "Cannot read input file" in
   let phrase_start = ref 1 and phrase_stop = ref 1 in
@@ -697,8 +690,13 @@ let process_file file =
             file !phrase_stop phrase in
         (* Special characters may also appear in output strings -Didier *)
         let output = Text_transform.escape_specials output in
-        let phrase = format_input mode phrase in
-        let final_output = if omit_answer then error_msgs else output in
+        let phrase = global_replace ~!{|^\(.\)|} camlin phrase
+        and output = global_replace ~!{|^\(.\)|} camlout output in
+        let final_output =
+          if omit_answer && String.length error_msgs > 0 then
+            global_replace ~!{|^\(.\)|} camlout error_msgs
+          else if omit_answer then ""
+          else output in
         start tex_fmt phrase_env [];
         code_env input_env tex_fmt phrase;
         if String.length final_output > 0 then

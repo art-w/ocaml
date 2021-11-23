@@ -99,10 +99,8 @@ rem needs upgrading.
 set CYGWIN_PACKAGES=cygwin make diffutils
 set CYGWIN_COMMANDS=cygcheck make diff
 if "%PORT%" equ "mingw32" (
-  rem mingw64-i686-runtime does not need explictly installing, but it's useful
-  rem to have the version reported.
-  set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% mingw64-i686-gcc-core mingw64-i686-runtime
-  set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% i686-w64-mingw32-gcc cygcheck
+  set CYGWIN_PACKAGES=%CYGWIN_PACKAGES% mingw64-i686-gcc-core
+  set CYGWIN_COMMANDS=%CYGWIN_COMMANDS% i686-w64-mingw32-gcc
 )
 
 set CYGWIN_INSTALL_PACKAGES=

@@ -670,8 +670,7 @@ module Current_unit_name : sig
   val get : unit -> modname
   val set : modname -> unit
   val is : modname -> bool
-  val is_ident : Ident.t -> bool
-  val is_path : Path.t -> bool
+  val is_name_of : Ident.t -> bool
 end = struct
   let current_unit =
     ref ""
@@ -681,11 +680,8 @@ end = struct
     current_unit := name
   let is name =
     !current_unit = name
-  let is_ident id =
-    Ident.persistent id && is (Ident.name id)
-  let is_path = function
-  | Pident id -> is_ident id
-  | Pdot _ | Papply _ -> false
+  let is_name_of id =
+    is (Ident.name id)
 end
 
 let set_unit_name = Current_unit_name.set
@@ -695,7 +691,7 @@ let find_same_module id tbl =
   match IdTbl.find_same id tbl with
   | x -> x
   | exception Not_found
-    when Ident.persistent id && not (Current_unit_name.is_ident id) ->
+    when Ident.persistent id && not (Current_unit_name.is_name_of id) ->
       Mod_persistent
 
 let find_name_module ~mark name tbl =
@@ -707,34 +703,20 @@ let find_name_module ~mark name tbl =
 
 let add_persistent_structure id env =
   if not (Ident.persistent id) then invalid_arg "Env.add_persistent_structure";
-  if Current_unit_name.is_ident id then env
-  else begin
-    let material =
-      (* This addition only observably changes the environment if it shadows a
-         non-persistent module already in the environment.
-         (See PR#9345) *)
+  if not (Current_unit_name.is_name_of id) then
+    let summary =
       match
         IdTbl.find_name wrap_module ~mark:false (Ident.name id) env.modules
       with
-      | exception Not_found | _, Mod_persistent -> false
-      | _ -> true
+      | exception Not_found | _, Mod_persistent -> env.summary
+      | _ -> Env_persistent (env.summary, id)
     in
-    let summary =
-      if material then Env_persistent (env.summary, id)
-      else env.summary
-    in
-    let modules =
-      (* With [-no-alias-deps], non-material additions should not
-         affect the environment at all. We should only observe the
-         existence of a cmi when accessing components of the module.
-         (See #9991). *)
-      if material || not !Clflags.transparent_modules then
-        IdTbl.add id Mod_persistent env.modules
-      else
-        env.modules
-    in
-    { env with modules; summary }
-  end
+    { env with
+      modules = IdTbl.add id Mod_persistent env.modules;
+      summary
+    }
+  else
+    env
 
 let components_of_module ~alerts ~uid env fs ps path addr mty =
   {
@@ -3189,13 +3171,9 @@ let report_lookup_error _loc env ppf = function
       fprintf ppf "@[The functor %a is generative,@ it@ cannot@ be@ \
                    applied@ in@ type@ expressions@]" !print_longident lid
   | Cannot_scrape_alias(lid, p) ->
-      let cause =
-        if Current_unit_name.is_path p then "is the current compilation unit"
-        else "is missing"
-      in
       fprintf ppf
-        "The module %a is an alias for module %a, which %s"
-        !print_longident lid !print_path p cause
+        "The module %a is an alias for module %a, which is missing"
+        !print_longident lid !print_path p
 
 let report_error ppf = function
   | Missing_module(_, path1, path2) ->

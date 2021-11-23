@@ -296,13 +296,13 @@ let op_shapes = [
   opGRAB, Uint;
   opCLOSURE, Uint_Disp;
   opCLOSUREREC, Closurerec;
-  opOFFSETCLOSUREM3, Nothing;
+  opOFFSETCLOSUREM2, Nothing;
   opOFFSETCLOSURE0, Nothing;
-  opOFFSETCLOSURE3, Nothing;
+  opOFFSETCLOSURE2, Nothing;
   opOFFSETCLOSURE, Sint;  (* was Uint *)
-  opPUSHOFFSETCLOSUREM3, Nothing;
+  opPUSHOFFSETCLOSUREM2, Nothing;
   opPUSHOFFSETCLOSURE0, Nothing;
-  opPUSHOFFSETCLOSURE3, Nothing;
+  opPUSHOFFSETCLOSURE2, Nothing;
   opPUSHOFFSETCLOSURE, Sint; (* was Nothing *)
   opGETGLOBAL, Getglobal;
   opPUSHGETGLOBAL, Getglobal;

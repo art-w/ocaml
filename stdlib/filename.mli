@@ -222,5 +222,4 @@ val quote_command :
     Under Win32, additional quoting is performed as required by the
     [cmd.exe] shell that is called by {!Sys.command}.
     @raise Failure if the command cannot be escaped on the current platform.
-    @since 4.10.0
 *)

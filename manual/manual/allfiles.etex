@@ -63,9 +63,12 @@ and as a
 \input{native.tex}
 \input{lexyacc.tex}
 \input{ocamldep.tex}
+\input{browser.tex}
 \input{ocamldoc.tex}
 \input{debugger.tex}
 \input{profil.tex}
+\input{ocamlbuild.tex}
+% \input emacs.tex
 \input{intf-c.tex}
 \input{flambda.tex}
 \input{afl-fuzz.tex}
@@ -77,13 +80,15 @@ and as a
 \input{stdlib-blurb.tex}
 \input{compilerlibs.tex}
 \input{libunix.tex}
+\input{libnum.tex}
 \input{libstr.tex}
 \input{libthreads.tex}
+\input{libgraph.tex}
 \input{libdynlink.tex}
-\input{old.tex}
+\input{libbigarray.tex}
 
-\part{Indexes}
-\label{p:indexes}
+\part{Appendix}
+\label{p:appendix}
 
 \ifouthtml
 \begin{links}

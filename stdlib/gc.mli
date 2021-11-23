@@ -463,7 +463,6 @@ external eventlog_resume : unit -> unit = "caml_eventlog_resume"
    notice. *)
 module Memprof :
   sig
-    type allocation_source = Normal | Marshal | Custom
     type allocation = private
       { n_samples : int;
         (** The number of samples in this block (>= 1). *)
@@ -471,8 +470,8 @@ module Memprof :
         size : int;
         (** The size of the block, in words, excluding the header. *)
 
-        source : allocation_source;
-        (** The type of the allocation. *)
+        unmarshalled : bool;
+        (** Whether the block comes from unmarshalling. *)
 
         callstack : Printexc.raw_backtrace
         (** The callstack for the allocation. *)
@@ -525,10 +524,10 @@ module Memprof :
        over their lifetime in the minor and major heap.
 
        Sampling is temporarily disabled when calling a callback
-       for the current thread. So they do not need to be re-entrant if
+       for the current thread. So they do not need to be reentrant if
        the program is single-threaded. However, if threads are used,
        it is possible that a context switch occurs during a callback,
-       in this case the callback functions must be re-entrant.
+       in this case the callback functions must be reentrant.
 
        Note that the callback can be postponed slightly after the
        actual event. The callstack passed to the callback is always

@@ -15,6 +15,8 @@
 
 (** Either type.
 
+    @since 4.12
+
     Either is the simplest and most generic sum/variant type:
     a value of [('a, 'b) Either.t] is either a [Left (v : 'a)]
     or a [Right (v : 'b)].
@@ -25,14 +27,11 @@
 
     For example:
 
-{[List.partition_map:
-    ('a -> ('b, 'c) Either.t) -> 'a list -> 'b list * 'c list]}
+[List.partition_map: ('a -> ('b, 'c) either) -> 'a list -> 'b list * 'c list]
 
     If you are looking for a parametrized type where
     one alternative means success and the other means failure,
     you should use the more specific type {!Result.t}.
-
-    @since 4.12
 *)
 
 (* Unlike [result], no [either] type is made available in Stdlib,

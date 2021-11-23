@@ -13,9 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Ephemerons and weak hash tables.
+(** Ephemerons and weak hash tables *)
 
-    Ephemerons and weak hash tables are useful when one wants to cache
+(** Ephemerons and weak hash tables are useful when one wants to cache
     or memorize the computation of a function, as long as the
     arguments and the function are used, without creating memory leaks
     by continuously keeping old computation results that are not
@@ -188,7 +188,6 @@ module K1 : sig
       The seed is similar to the one of {!Hashtbl.MakeSeeded}. *)
 
 end
-(** Ephemerons with one key. *)
 
 module K2 : sig
   type ('k1,'k2,'d) t (** an ephemeron with two keys *)
@@ -267,7 +266,6 @@ module K2 : sig
       The seed is similar to the one of {!Hashtbl.MakeSeeded}. *)
 
 end
-(** Emphemerons with two keys. *)
 
 module Kn : sig
   type ('k,'d) t (** an ephemeron with an arbitrary number of keys
@@ -324,7 +322,6 @@ module Kn : sig
       The seed is similar to the one of {!Hashtbl.MakeSeeded}. *)
 
 end
-(** Emphemerons with arbitrary number of keys of the same type. *)
 
 module GenHashTable: sig
   (** Define a hash table on generic containers which have a notion of
@@ -332,8 +329,7 @@ module GenHashTable: sig
       automatically remove it. *)
 
   type equal =
-  | ETrue
-  | EFalse
+  | ETrue | EFalse
   | EDead (** the container is dead *)
 
   module MakeSeeded(H:
@@ -373,4 +369,3 @@ module GenHashTable: sig
       for keeping the information given *)
 
 end
-(** Hash tables on generic containers with notion of death and aliveness. *)

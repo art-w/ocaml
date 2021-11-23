@@ -475,21 +475,21 @@ CAMLprim value caml_gc_set(value v)
 
   /* These fields were added in 4.08.0. */
   if (Wosize_val (v) >= 11){
-    new_custom_maj = norm_custom_maj (Long_val (Field (v, 8)));
+    new_custom_maj = norm_custom_maj (Field (v, 8));
     if (new_custom_maj != caml_custom_major_ratio){
       caml_custom_major_ratio = new_custom_maj;
       caml_gc_message (0x20, "New custom major ratio: %"
                        ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                        caml_custom_major_ratio);
     }
-    new_custom_min = norm_custom_min (Long_val (Field (v, 9)));
+    new_custom_min = norm_custom_min (Field (v, 9));
     if (new_custom_min != caml_custom_minor_ratio){
       caml_custom_minor_ratio = new_custom_min;
       caml_gc_message (0x20, "New custom minor ratio: %"
                        ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                        caml_custom_minor_ratio);
     }
-    new_custom_sz = Long_val (Field (v, 10));
+    new_custom_sz = Field (v, 10);
     if (new_custom_sz != caml_custom_minor_max_bsz){
       caml_custom_minor_max_bsz = new_custom_sz;
       caml_gc_message (0x20, "New custom minor size limit: %"
@@ -603,21 +603,10 @@ cleanup:
 
 CAMLprim value caml_gc_major_slice (value v)
 {
-  value exn = Val_unit;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_MAJOR_SLICE);
   CAMLassert (Is_long (v));
-  if (caml_gc_phase == Phase_idle){
-    /* We need to start a new major GC cycle. Go through the pending_action
-       machinery. */
-    caml_request_major_slice ();
-    exn = caml_process_pending_actions_exn ();
-      /* Calls the major GC without passing [v] but the initial slice
-         ignores this parameter anyway. */
-  }else{
-    caml_major_collection_slice (Long_val (v));
-  }
+  caml_major_collection_slice (Long_val (v));
   CAML_EV_END(EV_EXPLICIT_GC_MAJOR_SLICE);
-  caml_raise_if_exception (exn);
   return Val_long (0);
 }
 

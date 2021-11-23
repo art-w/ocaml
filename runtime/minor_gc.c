@@ -170,8 +170,8 @@ void caml_set_minor_heap_size (asize_t bsz)
   Caml_state->young_alloc_mid =
     Caml_state->young_alloc_start + Wsize_bsize (bsz) / 2;
   Caml_state->young_alloc_end = Caml_state->young_end;
-  /* caml_update_young_limit called by caml_memprof_renew_minor_sample */
   Caml_state->young_trigger = Caml_state->young_alloc_start;
+  caml_update_young_limit();
   Caml_state->young_ptr = Caml_state->young_alloc_end;
   Caml_state->minor_heap_wsz = Wsize_bsize (bsz);
   caml_memprof_renew_minor_sample();
@@ -460,39 +460,34 @@ extern uintnat caml_instr_alloc_jump;
 */
 void caml_gc_dispatch (void)
 {
+  value *trigger = Caml_state->young_trigger; /* save old value of trigger */
+
   CAML_EVENTLOG_DO({
     CAML_EV_COUNTER(EV_C_ALLOC_JUMP, caml_instr_alloc_jump);
     caml_instr_alloc_jump =  0;
   });
 
-  if (Caml_state->young_trigger == Caml_state->young_alloc_start){
+  if (trigger == Caml_state->young_alloc_start
+      || Caml_state->requested_minor_gc) {
     /* The minor heap is full, we must do a minor collection. */
-    Caml_state->requested_minor_gc = 1;
-  }else{
-    /* The minor heap is half-full, do a major GC slice. */
-    Caml_state->requested_major_slice = 1;
-  }
-  if (caml_gc_phase == Phase_idle){
-    /* The major GC needs an empty minor heap in order to start a new cycle.
-       If a major slice was requested, we need to do a minor collection
-       before we can do the major slice that starts a new major GC cycle.
-       If a minor collection was requested, we take the opportunity to start
-       a new major GC cycle.
-       In either case, we have to do a minor cycle followed by a major slice.
-    */
-    Caml_state->requested_minor_gc = 1;
-    Caml_state->requested_major_slice = 1;
-  }
-  if (Caml_state->requested_minor_gc) {
     /* reset the pointers first because the end hooks might allocate */
     CAML_EV_BEGIN(EV_MINOR);
     Caml_state->requested_minor_gc = 0;
     Caml_state->young_trigger = Caml_state->young_alloc_mid;
     caml_update_young_limit();
     caml_empty_minor_heap ();
+    /* The minor heap is empty, we can start a major collection. */
     CAML_EV_END(EV_MINOR);
+    if (caml_gc_phase == Phase_idle)
+    {
+      CAML_EV_BEGIN(EV_MAJOR);
+      caml_major_collection_slice (-1);
+      CAML_EV_END(EV_MAJOR);
+    }
   }
-  if (Caml_state->requested_major_slice) {
+  if (trigger != Caml_state->young_alloc_start
+      || Caml_state->requested_major_slice) {
+    /* The minor heap is half-full, do a major GC slice. */
     Caml_state->requested_major_slice = 0;
     Caml_state->young_trigger = Caml_state->young_alloc_start;
     caml_update_young_limit();

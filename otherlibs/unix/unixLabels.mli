@@ -17,16 +17,9 @@
    If this file is unixLabels.mli, run tools/sync_stdlib_docs after editing it
    to generate unix.mli.
 
-   If this file is unix.mli, do not edit it directly -- edit unixLabels.mli
-   instead.
-*)
-
-(* NOTE:
-   When a new function is added which is not implemented on Windows (or
-   partially implemented), or the Windows-status of an existing function is
-   changed, remember to update the summary table in
-   manual/manual/library/libunix.etex
-*)
+   If this file is unix.mli, do not edit it directly -- edit
+   unixLabels.mli instead.
+ *)
 
 (** Interface to the Unix system.
 
@@ -1504,13 +1497,13 @@ type socket_bool_option = Unix.socket_bool_option =
     SO_DEBUG       (** Record debugging information *)
   | SO_BROADCAST   (** Permit sending of broadcast messages *)
   | SO_REUSEADDR   (** Allow reuse of local addresses for bind *)
+  | SO_REUSEPORT   (** Allow reuse of address and port bindings *)
   | SO_KEEPALIVE   (** Keep connection active *)
   | SO_DONTROUTE   (** Bypass the standard routing algorithms *)
   | SO_OOBINLINE   (** Leave out-of-band data in line *)
   | SO_ACCEPTCONN  (** Report whether socket listening is enabled *)
   | TCP_NODELAY    (** Control the Nagle algorithm for TCP sockets *)
   | IPV6_ONLY      (** Forbid binding an IPv6 socket to an IPv4 address *)
-  | SO_REUSEPORT   (** Allow reuse of address and port bindings *)
 (** The socket options that can be consulted with {!getsockopt}
    and modified with {!setsockopt}.  These options have a boolean
    ([true]/[false]) value. *)

@@ -17,7 +17,7 @@ dune_build () {
   for i in $(seq 1 "$NB_RUNS"); do
     rm -f build.log
     dune clean
-    OCAMLPARAM=",_,timings=1" dune build --verbose . 2>&1 | tee -a build.log
+    OCAMLPARAM=",_,timings=1" dune build --verbose --profile=release . 2>&1 | tee -a build.log
     cat build.log | timings "$project"
   done
   cd ..
