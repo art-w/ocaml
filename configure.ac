@@ -52,6 +52,7 @@ internal_cppflags=""
 ocamlc_cflags=""
 ocamlc_cppflags=""
 oc_ldflags=""
+oc_dll_ldflags=""
 with_sharedlibs=true
 ostype="Unix"
 iflexdir=""
@@ -108,6 +109,7 @@ AC_SUBST([toolchain])
 AC_SUBST([oc_cflags])
 AC_SUBST([oc_cppflags])
 AC_SUBST([oc_ldflags])
+AC_SUBST([oc_dll_ldflags])
 AC_SUBST([bytecclibs])
 AC_SUBST([nativecclibs])
 AC_SUBST([ocamlc_cflags])
@@ -152,7 +154,6 @@ AC_SUBST([profinfo_width])
 AC_SUBST([frame_pointers])
 AC_SUBST([flambda])
 AC_SUBST([flambda_invariants])
-AC_SUBST([max_testsuite_dir_retries])
 AC_SUBST([windows_unicode])
 AC_SUBST([flat_float_array])
 AC_SUBST([function_sections])
@@ -679,7 +680,7 @@ AS_CASE([$CC,$host],
   [*,*-*-mingw32],
     [AS_IF([$with_sharedlibs],
       [AS_CASE([$host],
-        [i686-*-*], [flexdll_chain="mingw"],
+        [i686-*-*], [flexdll_chain="mingw"; oc_dll_ldflags="-static-libgcc"],
         [x86_64-*-*], [flexdll_chain="mingw64"])
       flexlink="flexlink -chain $flexdll_chain -merge-manifest -stack 16777216"
       flexdir=`$flexlink -where | tr -d '\015'`
@@ -822,6 +823,9 @@ AS_IF([test x"$enable_shared" != "xno"],
     [*-*-mingw32],
       [mksharedlib='$(FLEXLINK)'
       mkmaindll='$(FLEXLINK) -maindll'
+      AS_IF([test -n "$oc_dll_ldflags"],[
+        mksharedlib="$mksharedlib -link \"$oc_dll_ldflags\""
+        mkmaindll="$mkmaindll -link \"$oc_dll_ldflags\""])
       shared_libraries_supported=$with_sharedlibs],
     [*-pc-windows],
       [mksharedlib='$(FLEXLINK)'
@@ -989,7 +993,7 @@ AS_CASE([$host],
 )
 
 AS_IF([test x"$enable_native_compiler" = "xno"],
-  [arch=none; model=default; system=unknown; native_compiler=false
+  [native_compiler=false
   AC_MSG_NOTICE([the native compiler is disabled])],
   [native_compiler=true])
 
@@ -1105,6 +1109,13 @@ AS_IF([test "$with_pic"],
 AS_IF([test -z "$AS"], [AS="$default_as"])
 
 AS_IF([test -z "$ASPP"], [ASPP="$default_aspp"])
+
+# Utilities
+AC_CHECK_PROG([rlwrap],[rlwrap],[rlwrap])
+AS_CASE([$rlwrap,$system],
+  [rlwrap,win*|rlwrap,mingw*],
+    [AC_MSG_NOTICE([rlwrap doesn't work with native win32 - disabling])
+     rlwrap=''])
 
 # Checks for library functions
 
@@ -1793,15 +1804,13 @@ AS_IF([test x"$mandir" = x'${datarootdir}/man'],
 
 AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
-    [max_testsuite_dir_retries=1
-    AS_CASE([$WINDOWS_UNICODE_MODE],
+    [AS_CASE([$WINDOWS_UNICODE_MODE],
       [ansi],
         [windows_unicode=0],
       [compatible|""],
         [windows_unicode=1],
       [AC_MSG_ERROR([unexpected windows unicode mode])])],
-  [max_testsuite_dir_retries=0
-  windows_unicode=0])
+  [windows_unicode=0])
 
 # Define flexlink chain and flags correctly for the different Windows ports
 AS_CASE([$host],

@@ -634,16 +634,14 @@ runtop:
 	$(MAKE) ocamlc
 	$(MAKE) otherlibraries
 	$(MAKE) ocaml
-	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(RUNTOP) ||\
-	  $(EXTRAPATH) $(RUNTOP)
+	@$(EXTRAPATH) $(RLWRAP) $(RUNTOP)
 
 .PHONY: natruntop
 natruntop:
 	$(MAKE) core
 	$(MAKE) opt
 	$(MAKE) ocamlnat
-	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) ||\
-	  $(EXTRAPATH) $(NATRUNTOP)
+	@$(FLEXLINK_ENV) $(EXTRAPATH) $(RLWRAP) $(NATRUNTOP)
 
 # Native dynlink
 
@@ -924,11 +922,14 @@ partialclean::
 # Check that the native-code compiler is supported
 .PHONY: checknative
 checknative:
+ifneq "$(NATIVE_COMPILER)" "true"
+	$(error The source tree was configured with --disable-native-compiler!)
+else
 ifeq "$(ARCH)" "none"
-checknative:
 	$(error The native-code compiler is not supported on this platform)
 else
 	@
+endif
 endif
 
 # Check that the stack limit is reasonable (Unix-only)
