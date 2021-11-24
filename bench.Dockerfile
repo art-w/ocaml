@@ -31,6 +31,9 @@ RUN git clone 'https://github.com/ocaml/opam'
 
 RUN git clone 'https://github.com/coq/coq'
 
+RUN opam remote add alpha git+https://github.com/kit-ty-kate/opam-alpha-repository \
+    && git clone 'https://github.com/mirage/irmin'
+
 # RUN git clone 'https://github.com/owlbarn/owl.git'
 
 # RUN git clone 'https://github.com/mirage/irmin'

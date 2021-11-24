@@ -6,7 +6,7 @@ OCaml 4.12.0
 - #1655: pattern aliases do not ignore type constraints
   (Thomas Refis, review by Jacques Garrigue and Gabriel Scherer)
 
-* #9500, #9727: Injectivity annotations
+* #9500, #9727, #9866, #9870, #9873: Injectivity annotations
   One can now mark type parameters as injective, which is useful for
   abstract types:
     module Vec : sig type !'a t end = struct type 'a t = 'a array end
@@ -14,6 +14,7 @@ OCaml 4.12.0
   parameters. Since all parameters of record and sum types are by definition
   injective, this only makes sense for type abbreviations:
     type !'a t = 'a list
+  Note that this change required making the regularity check stricter.
   (Jacques Garrigue, review by Jeremy Yallop and Leo White)
 
 - #9429: Add unary operators containing `#` to the parser for use in ppx
@@ -26,16 +27,11 @@ OCaml 4.12.0
   (GitHub user @EduardoRFS, review by Xavier Leroy, Nicolás Ojeda Bär
    and Anil Madhavapeddy, additional testing by Michael Schmidt)
 
-### Type system:
-
-* #9811: remove propagation from previous branches
-  Type information inferred from previous branches was propagated in
-  non-principal mode. Revert this for better compatibility with
-  -principal mode.
-  For the time being, infringing code should result in a principality warning.
-  (Jacques Garrigue, review by Thomas Refis and Gabriel Scherer)
-
 ### Runtime system:
+
+- #2195: Improve error message in bytecode stack trace printing and load
+  debug information during bytecode startup if OCAMLRUNPARAM=b=2.
+  (David Allsopp, review by Gabriel Scherer and Xavier Leroy)
 
 - #9756: garbage collector colors change
   removes the gray color from the major gc
@@ -159,6 +155,10 @@ OCaml 4.12.0
   in the same thread the allocation takes place
   (Jacques-Henri Jourdan, review by Stephen Dolan)
 
+- #10050: update {PUSH,}OFFSETCLOSURE* bytecode instructions to match new
+  representation for closures
+  (Nathanaël Courant, review by Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #9551: ocamlc no longer loads DLLs at link time to check that
@@ -217,6 +217,9 @@ OCaml 4.12.0
   OCaml.
   (Gabriel Scherer, review by Xavier Leroy)
 
+- #10035: Make sure that flambda respects atomicity in the Atomic module.
+  (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
+
 - #9571: Make at_exit and Printexc.register_printer thread-safe.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer and Xavier Leroy)
 
@@ -261,6 +264,10 @@ OCaml 4.12.0
    Xavier Leroy)
 
 ### Other libraries:
+
+- #8796: On Windows, make Unix.utimes use FILE_FLAG_BACKUP_SEMANTICS flag
+  to allow it to work with directories.
+  (Daniil Baturin, review by Damien Doligez)
 
 * #9206, #9419: update documentation of the threads library;
   deprecate Thread.kill, Thread.wait_read, Thread.wait_write,
@@ -399,6 +406,9 @@ OCaml 4.12.0
 - #9783: Widen warning 16 to more cases.
   (Leo White, review by Florian Angeletti)
 
+- #10008: Improve error message for aliases to the current compilation unit.
+  (Leo White, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #8987: Make some locations more accurate
@@ -502,6 +512,10 @@ OCaml 4.12.0
 - #9824, #9837: Honour the CFLAGS and CPPFLAGS variables.
   (Sébastien Hinderer, review by David Allsopp)
 
+- #9938, #9939: Define __USE_MINGW_ANSI_STDIO=0 for the mingw-w64 ports to
+  prevent their C99-compliant snprintf conflicting with ours.
+  (David Allsopp, report by Michael Soegtrop, review by Xavier Leroy)
+
 - #9895, #9523: Avoid conflict with C++20 by not installing VERSION to the OCaml
   Standard Library directory.
   (Bernhard Schommer, review by David Allsopp)
@@ -510,6 +524,9 @@ OCaml 4.12.0
 
 - #7538, #9669: Check for misplaced attributes on module aliases
   (Leo White, report by Thomas Leonard, review by Florian Angeletti)
+
+- #7813, #9955: make sure the major GC cycle doesn't get stuck in Idle state
+  (Damien Doligez, report by Anders Fugmann, review by Jacques-Henri Jourdan)
 
 - #7902, #9556: Type-checker infers recursive type, even though -rectypes is
   off.
@@ -593,6 +610,24 @@ OCaml 4.12.0
   (Vincent Laviron, report by Stephen Dolan, review by Xavier Leroy and
   Stephen Dolan)
 
+- #9991: Fix reproducibility for `-no-alias-deps`
+  (Leo White, review by Gabriel Scherer and Florian Angeletti)
+
+- #9998: Use Sys.opaque_identity in CamlinternalLazy.force
+  This removes extra warning 59 messages when compiling afl-instrumented
+  code with flambda -O3.
+  (Vincent Laviron, report by Louis Gesbert, review by Gabriel Scherer and
+   Pierre Chambart)
+
+- #9999: fix -dsource printing of the pattern (`A as x | (`B as x)).
+  (Gabriel Scherer, report by Anton Bachin, review by Florian Angeletti)
+
+- #9970, #10010: fix the declaration scope of extensible-datatype constructors.
+  A regression that dates back to 4.08 makes extensible-datatype constructors
+  with inline records very fragile, for example:
+    type 'a t += X of {x : 'a}
+  (Gabriel Scherer, review by Thomas Refis and Leo White,
+   report by Nicolás Ojeda Bär)
 
 OCaml 4.11.1
 ------------
