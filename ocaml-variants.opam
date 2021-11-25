@@ -1,6 +1,6 @@
 opam-version: "2.0"
-version: "4.12.0~alpha3"
-synopsis: "OCaml 4.12.0, third alpha release"
+version: "4.12.1"
+synopsis: "OCaml 4.12.1"
 depends: [
 ]
 conflict-class: "ocaml-core-compiler"
