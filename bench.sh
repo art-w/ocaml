@@ -1,5 +1,5 @@
 #!/bin/sh
-export NB_RUNS=5
+export NB_RUNS=3
 export BENCHMARK_FILE="$1"
 echo benchmark file is "$BENCHMARK_FILE"
 
@@ -38,9 +38,7 @@ opam switch create . --empty
 opam pin -ny .
 
 ./configure --prefix=$(opam var prefix)
-
-bootstrap
-
+make world.opt
 echo
 echo '--- OCAML WILL BE INSTALLED ---'
 echo
@@ -69,6 +67,12 @@ eval $(opam env --switch=. --set-switch)
 ocaml --version
 
 opam switch list
+
+echo
+echo '--- OCAML BOOTSRAP ---'
+echo
+
+bootstrap
 
 echo
 echo '--- DUNE WILL BE INSTALLED ---'
