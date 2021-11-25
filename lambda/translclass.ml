@@ -351,8 +351,8 @@ let rec build_class_init ~scopes cla cstr super inh_init cl_init msubst top cl =
       (inh_init, transl_vals cla true StrictOpt vals cl_init)
   | Tcl_constraint (cl, _, vals, meths, concr_meths) ->
       let virt_meths =
-        List.filter (fun lab -> not (Concr.mem lab concr_meths)) meths in
-      let concr_meths = Concr.elements concr_meths in
+        List.filter (fun lab -> not (MethSet.mem lab concr_meths)) meths in
+      let concr_meths = MethSet.elements concr_meths in
       let narrow_args =
         [Lvar cla;
          transl_meth_list vals;
@@ -529,20 +529,13 @@ let transl_class_rebind ~scopes cl vf =
 
 (* Rewrite a closure using builtins. Improves native code size. *)
 
-let rec module_path = function
-    Lvar id ->
-      let s = Ident.name id in s <> "" && s.[0] >= 'A' && s.[0] <= 'Z'
-  | Lprim(Pfield _, [p], _)    -> module_path p
-  | Lprim(Pgetglobal _, [], _) -> true
-  | _                          -> false
-
 let const_path local = function
     Lvar id -> not (List.mem id local)
   | Lconst _ -> true
   | Lfunction {kind = Curried; body} ->
       let fv = free_variables body in
       List.for_all (fun x -> not (Ident.Set.mem x fv)) local
-  | p -> module_path p
+  | _ -> false
 
 let rec builtin_meths self env env2 body =
   let const_path = const_path (env::self) in

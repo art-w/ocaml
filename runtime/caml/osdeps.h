@@ -108,9 +108,13 @@ extern char_os *caml_secure_getenv(char_os const *var);
    cannot be determined, return -1. */
 extern int caml_num_rows_fd(int fd);
 
+/* Try to increase the size of the native stack */
+extern void caml_increase_native_stack_size(void);
+
 #ifdef _WIN32
 
 extern int caml_win32_rename(const wchar_t *, const wchar_t *);
+CAMLextern int caml_win32_unlink(const wchar_t *);
 
 extern void caml_probe_win32_version(void);
 extern void caml_setup_win32_terminal(void);

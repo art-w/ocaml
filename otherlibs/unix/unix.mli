@@ -844,7 +844,7 @@ val create_process :
    concurrently with the current process.
    The standard input and outputs of the new process are connected
    to the descriptors [stdin], [stdout] and [stderr].
-   Passing e.g. [Stdlib.stdout] for [stdout] prevents the redirection
+   Passing e.g. {!Unix.stdout} for [stdout] prevents the redirection
    and causes the new process to have the same standard output
    as the current process.
    The executable file [prog] is searched in the path.
@@ -1403,7 +1403,8 @@ type socket_domain =
 (** The type of socket domains.  Not all platforms support
     IPv6 sockets (type [PF_INET6]).
 
-    On Windows: [PF_UNIX] not implemented.  *)
+   On Windows: [PF_UNIX] supported since 4.14.0 on Windows 10 1803
+   and later.  *)
 
 type socket_type =
     SOCK_STREAM                 (** Stream socket *)
