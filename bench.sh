@@ -1,5 +1,5 @@
 #!/bin/sh
-export NB_RUNS=3
+export NB_RUNS=1
 export BENCHMARK_FILE="$1"
 echo benchmark file is "$BENCHMARK_FILE"
 
@@ -74,6 +74,8 @@ echo
 
 bootstrap
 
+ocaml --version
+
 echo
 echo '--- DUNE WILL BE INSTALLED ---'
 echo
@@ -94,6 +96,7 @@ for i in $(seq 1 "$NB_RUNS"); do
 done
 cd ..
 
+opam install -y ppxlib.0.23.1~alpha-repo
 
 cd irmin
 git checkout 2.9.0

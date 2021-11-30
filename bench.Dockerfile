@@ -6,14 +6,16 @@ RUN sudo apt-get update && sudo apt-get install -qq -yy libffi-dev \
         liblapacke-dev libopenblas-dev libplplot-dev libshp-dev \
         zlib1g-dev libgtksourceview-3.0-dev
 
-RUN opam remote add origin https://opam.ocaml.org \
-    && opam repository set-url default https://github.com/ocaml/opam-repository.git \
-    && opam repository add dune-universe git+https://github.com/dune-universe/opam-overlays.git \
-    && opam install -y dune opam-monorepo \
+RUN opam remote add origin https://opam.ocaml.org --all-switches \
+    && opam repository set-url default https://github.com/ocaml/opam-repository.git --all-switches \
+    && opam repository add dune-universe git+https://github.com/dune-universe/opam-overlays.git --all-switches \
+    && opam repository add alpha git+https://github.com/kit-ty-kate/opam-alpha-repository --all-switches \
+    && opam update \
+    && opam install -y dune \
     && eval $(opam env)
 
-RUN git clone 'https://github.com/mirage/mirage/' \
-    && cd mirage && opam monorepo lock && opam monorepo pull && cd ..
+# RUN git clone 'https://github.com/mirage/mirage/' \
+#     && cd mirage && opam monorepo lock && opam monorepo pull && cd ..
 
 RUN git clone 'https://github.com/art-w/deque/'
 
@@ -31,8 +33,7 @@ RUN git clone 'https://github.com/ocaml/opam'
 
 RUN git clone 'https://github.com/coq/coq'
 
-RUN opam remote add alpha git+https://github.com/kit-ty-kate/opam-alpha-repository \
-    && git clone 'https://github.com/mirage/irmin'
+RUN git clone 'https://github.com/mirage/irmin'
 
 # RUN git clone 'https://github.com/owlbarn/owl.git'
 
