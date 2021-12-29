@@ -1,7 +1,10 @@
 #!/bin/sh
-export NB_RUNS=1
+export NB_RUNS=10
 export BENCHMARK_FILE="$1"
 echo benchmark file is "$BENCHMARK_FILE"
+
+opam config set-global jobs 128
+opam var
 
 timings () {
   project=$1
@@ -17,7 +20,7 @@ dune_build () {
   for i in $(seq 1 "$NB_RUNS"); do
     rm -f build.log
     dune clean
-    OCAMLPARAM=",_,timings=1" dune build --verbose --profile=release . 2>&1 | tee -a build.log
+    OCAMLPARAM=",_,timings=1" dune build --verbose --profile=release . 2>&1 | tee -a build.log | sed 's/^{/ {/'
     cat build.log | timings "$project"
   done
   cd ..
@@ -27,7 +30,7 @@ bootstrap () {
   for i in $(seq 1 "$NB_RUNS"); do
     rm -f build.log
     make clean
-	  OCAMLPARAM=",_,timings=1" make world.opt | tee -a build.log
+	  OCAMLPARAM=",_,timings=1" make world.opt -j128 | tee -a build.log | sed 's/^{/ {/'
     cat build.log | timings 'ocaml'
   done
 }
@@ -38,7 +41,7 @@ opam switch create . --empty
 opam pin -ny .
 
 ./configure --prefix=$(opam var prefix)
-make world.opt
+make world.opt -j128 | sed 's/^{/ {/'
 echo
 echo '--- OCAML WILL BE INSTALLED ---'
 echo
@@ -79,7 +82,10 @@ ocaml --version
 echo
 echo '--- DUNE WILL BE INSTALLED ---'
 echo
-opam install dune
+opam update
+eval $(opam env)
+ocaml --version
+opam install -y dune
 eval $(opam env)
 ocaml --version
 
@@ -91,12 +97,12 @@ cd dune
 for i in $(seq 1 "$NB_RUNS"); do
   rm -f build.log
   make clean
-  OCAMLPARAM=",_,timings=1" make release 2>&1 | tee -a build.log
+  OCAMLPARAM=",_,timings=1" make release 2>&1 | tee -a build.log | sed 's/^{/ {/'
   cat build.log | timings "dune"
 done
 cd ..
 
-opam install -y ppxlib.0.23.1~alpha-repo
+opam install -y ppxlib.0.24.0
 
 cd irmin
 git checkout 2.9.0
@@ -104,7 +110,7 @@ opam install -y --deps-only .
 for i in $(seq 1 "$NB_RUNS"); do
   rm -f build.log
   dune clean
-  OCAMLPARAM=",_,timings=1" dune build --verbose --profile=release @install 2>&1 | tee -a build.log
+  OCAMLPARAM=",_,timings=1" dune build --verbose --profile=release @install 2>&1 | tee -a build.log | sed 's/^{/ {/'
   cat build.log | timings "irmin"
 done
 cd ..
@@ -117,13 +123,12 @@ opam install -y -t --deps-only .
 for i in $(seq 1 "$NB_RUNS"); do
   rm -f build.log
   make clean
-  OCAMLPARAM=",_,timings=1" make 2>&1 | tee -a build.log
+  OCAMLPARAM=",_,timings=1" make 2>&1 | tee -a build.log | sed 's/^{/ {/'
   cat build.log | timings "opam"
 done
 cd ..
 
 dune_build deque
-dune_build mirage
 
 opam_build() {
   project=$1
@@ -139,6 +144,8 @@ opam_build ocaml-containers
 opam_build decompress
 
 opam_build menhir
+
+dune_build mirage
 
 # cd zarith
 # echo 'opam install conf-gmp'
