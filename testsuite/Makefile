@@ -275,6 +275,18 @@ one: lib tools
 	@$(MAKE) check-failstamp
 	@$(MAKE) TESTLOG=$(TESTLOG).one report
 
+.PHONY: benchmarks
+benchmarks: lib tools
+	@-for i in $(shell seq 1 5); do \
+	    for dir in tests/benchmarks/*; do \
+	      if [ -d $$dir ]; then \
+		$(MAKE) exec-one DIR=$$dir; \
+		LC_NUMERIC=POSIX $(AWK) -f ./tests/benchmarks/to_json.awk < "$(BENCHMARK_FILE)"; \
+		rm '$(BENCHMARK_FILE)'; \
+	      fi; \
+	    done; \
+	  done
+
 .PHONY: exec-one
 exec-one:
 	@if $(ocamltest) -list-tests $(DIR) >/dev/null 2>&1; then \
