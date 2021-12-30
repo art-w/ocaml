@@ -6,6 +6,18 @@ echo benchmark file is "$BENCHMARK_FILE"
 opam config set-global jobs 128
 opam var
 
+binaries() {
+  project=$1
+  find -type f \
+    | grep -ve '\.git' -ve '_opam' \
+    | xargs -n1 file -i \
+    | grep 'binary$' \
+    | cut -f1 -d: \
+    | xargs -n1 du -s \
+    | awk "1{s+=\$1} END{print \"binaries\\t$project\\t\" s}" \
+  >> "$BENCHMARK_FILE"
+}
+
 timings () {
   project=$1
   grep '^[0-9]\+\.[0-9]\+s ' build.log \
@@ -13,6 +25,7 @@ timings () {
     | sed 's/^\([0-9]\+.[0-9]\+\)s .*$$/\1/g' \
     | awk "1{s+=\$1} END{print \"projects\\t$project\\t\" s}" \
     >> "$BENCHMARK_FILE"
+  binaries "$project"
 }
 
 dune_build () {
