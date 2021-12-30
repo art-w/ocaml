@@ -35,6 +35,8 @@ RUN git clone 'https://github.com/mirage/irmin'
 RUN git clone 'https://github.com/mirage/mirage/' \
     && cd mirage && opam monorepo lock && opam monorepo pull && cd ..
 
+RUN git clone 'https://github.com/backtracking/ocamlgraph.git'
+
 # RUN git clone 'https://github.com/owlbarn/owl.git'
 
 # RUN git clone 'https://github.com/ocsigen/lwt'

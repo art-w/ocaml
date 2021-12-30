@@ -109,6 +109,7 @@ for i in $(seq 1 "$NB_RUNS"); do
 done
 cd ..
 
+
 opam install -y num
 eval $(opam env)
 opam install -y ppxlib.0.24.0
@@ -117,6 +118,22 @@ opam install -y sexplib
 eval $(opam env)
 opam install -y git-unix git-paf
 eval $(opam env)
+
+
+opam_build() {
+  project=$1
+  target=${2:-.}
+  cd "$project"
+  opam pin -ny .
+  opam install -y -t --deps-only .
+  cd ..
+  dune_build "$project" "$target"
+}
+
+
+opam_build ocamlgraph
+
+
 
 cd irmin
 git checkout 2.9.0
@@ -143,16 +160,6 @@ done
 cd ..
 
 dune_build deque
-
-opam_build() {
-  project=$1
-  target=${2:-.}
-  cd "$project"
-  opam pin -ny .
-  opam install -y -t --deps-only .
-  cd ..
-  dune_build "$project" "$target"
-}
 
 opam_build ocaml-containers
 
