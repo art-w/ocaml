@@ -9,6 +9,7 @@ opam var
 timings () {
   project=$1
   grep '^[0-9]\+\.[0-9]\+s ' build.log \
+    | grep -v 'other$' \
     | sed 's/^\([0-9]\+.[0-9]\+\)s .*$$/\1/g' \
     | awk "1{s+=\$1} END{print \"projects\\t$project\\t\" s}" \
     >> "$BENCHMARK_FILE"
@@ -16,11 +17,17 @@ timings () {
 
 dune_build () {
   project=$1
+  target=${2:-.}
   cd "$project"
   for i in $(seq 1 "$NB_RUNS"); do
     rm -f build.log
     dune clean
-    OCAMLPARAM=",_,timings=1" dune build --verbose --profile=release . 2>&1 | tee -a build.log | sed 's/^{/ {/'
+    echo
+    echo
+    echo "@@@@@@@@@@@ dune build $project $target"
+    echo
+    echo
+    OCAMLPARAM=",_,timings=1" dune build -j 128 --verbose --profile=release "$target" 2>&1 | tee -a build.log | sed 's/^{/ {/'
     cat build.log | timings "$project"
   done
   cd ..
@@ -102,7 +109,14 @@ for i in $(seq 1 "$NB_RUNS"); do
 done
 cd ..
 
+opam install -y num
+eval $(opam env)
 opam install -y ppxlib.0.24.0
+eval $(opam env)
+opam install -y sexplib
+eval $(opam env)
+opam install -y git-unix git-paf
+eval $(opam env)
 
 cd irmin
 git checkout 2.9.0
@@ -110,7 +124,7 @@ opam install -y --deps-only .
 for i in $(seq 1 "$NB_RUNS"); do
   rm -f build.log
   dune clean
-  OCAMLPARAM=",_,timings=1" dune build --verbose --profile=release @install 2>&1 | tee -a build.log | sed 's/^{/ {/'
+  OCAMLPARAM=",_,timings=1" dune build -j 128 --verbose --profile=release @install 2>&1 | tee -a build.log | sed 's/^{/ {/'
   cat build.log | timings "irmin"
 done
 cd ..
@@ -132,18 +146,19 @@ dune_build deque
 
 opam_build() {
   project=$1
+  target=${2:-.}
   cd "$project"
   opam pin -ny .
   opam install -y -t --deps-only .
   cd ..
-  dune_build "$project"
+  dune_build "$project" "$target"
 }
 
 opam_build ocaml-containers
 
 opam_build decompress
 
-opam_build menhir
+opam_build menhir '--only-packages=menhir'
 
 dune_build mirage
 
