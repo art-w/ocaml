@@ -176,7 +176,7 @@ opam_build decompress
 
 opam_build menhir '--only-packages=menhir'
 
-dune_build mirage
+# dune_build mirage
 
 # cd zarith
 # echo 'opam install conf-gmp'

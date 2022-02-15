@@ -32,8 +32,9 @@ RUN git clone 'https://github.com/coq/coq'
 
 RUN git clone 'https://github.com/mirage/irmin'
 
-RUN git clone 'https://github.com/mirage/mirage/' \
-    && cd mirage && opam monorepo lock && opam monorepo pull && cd ..
+# monorepo issue: functoria requires rresult>=0.7.0 which is not available in dune-universe
+# RUN git clone 'https://github.com/mirage/mirage/' \
+#     && cd mirage && opam monorepo lock && opam monorepo pull && cd ..
 
 RUN git clone 'https://github.com/backtracking/ocamlgraph.git'
 
