@@ -8,8 +8,8 @@ RUN sudo apt-get update && sudo apt-get install -qq -yy libffi-dev \
 
 RUN opam remote add origin https://opam.ocaml.org --all-switches \
     && opam repository add opam-repo https://github.com/ocaml/opam-repository.git --all-switches \
-    && opam repository add dune-universe git+https://github.com/dune-universe/opam-overlays.git --all-switches \
     && opam repository add alpha git+https://github.com/kit-ty-kate/opam-alpha-repository --all-switches \
+    && opam repository add dune-universe git+https://github.com/dune-universe/opam-overlays.git --all-switches --set-default \
     && opam update \
     && opam install -y dune \
     && eval $(opam env)

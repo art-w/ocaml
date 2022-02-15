@@ -1,10 +1,6 @@
 #!/bin/sh
-export NB_RUNS=10
+export NB_RUNS=2
 export BENCHMARK_FILE="$1"
-echo benchmark file is "$BENCHMARK_FILE"
-
-opam config set-global jobs 128
-opam var
 
 binaries() {
   project=$1
@@ -40,7 +36,7 @@ dune_build () {
     echo "@@@@@@@@@@@ dune build $project $target"
     echo
     echo
-    OCAMLPARAM=",_,timings=1" dune build -j 128 --verbose --profile=release "$target" 2>&1 | tee -a build.log | sed 's/^{/ {/'
+    OCAMLPARAM=",_,timings=1" dune build --verbose --profile=release "$target" 2>&1 | tee -a build.log | sed 's/^{/ {/'
     cat build.log | timings "$project"
   done
   cd ..
@@ -50,7 +46,7 @@ bootstrap () {
   for i in $(seq 1 "$NB_RUNS"); do
     rm -f build.log
     make clean
-	  OCAMLPARAM=",_,timings=1" make world.opt -j128 | tee -a build.log | sed 's/^{/ {/'
+	  OCAMLPARAM=",_,timings=1" make world.opt | tee -a build.log | sed 's/^{/ {/'
     cat build.log | timings 'ocaml'
   done
 }
@@ -61,7 +57,7 @@ opam switch create . --empty
 opam pin -ny .
 
 ./configure --prefix=$(opam var prefix)
-make world.opt -j128 | sed 's/^{/ {/'
+make world.opt | sed 's/^{/ {/'
 echo
 echo '--- OCAML WILL BE INSTALLED ---'
 echo
@@ -154,7 +150,7 @@ opam install -y --deps-only .
 for i in $(seq 1 "$NB_RUNS"); do
   rm -f build.log
   dune clean
-  OCAMLPARAM=",_,timings=1" dune build -j 128 --verbose --profile=release @install 2>&1 | tee -a build.log | sed 's/^{/ {/'
+  OCAMLPARAM=",_,timings=1" dune build --verbose --profile=release @install 2>&1 | tee -a build.log | sed 's/^{/ {/'
   cat build.log | timings "irmin"
 done
 cd ..
