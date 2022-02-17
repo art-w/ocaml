@@ -16,7 +16,7 @@ END {
     for (test in tests) {
         nb_metrics = tests[test]
         print "  { \"name\": \"" test "\","
-        print "    \"metrics\": {"
+        print "    \"metrics\": ["
         prefix = test SUBSEP;
         for (key in metrics) {
             if (index(key, prefix) != 1)
@@ -28,11 +28,11 @@ END {
                 measurements = "[" measurements "]"
             --nb_metrics
             comma = nb_metrics > 0 ? "," : ""
-            print "      \"" metric "\": " measurements comma
+            print "      { \"name\": \"" metric "\", \"value\": " measurements " }" comma
         }
         --nb_tests
         comma = nb_tests > 0 ? "," : ""
-        print "    }"
+        print "    ]"
         print "  }" comma
     }
     print "]}"
