@@ -1,10 +1,12 @@
-(NF == 3) {
+(NF == 4) {
     key = $1 SUBSEP $2
     if (key in metrics) {
         multiple[key]++;
         metrics[key] = metrics[key] "," $3;
+        units[key] = $4;
     } else {
         metrics[key] = $3;
+        units[key] = $4;
         if (! ($1 in tests))
           nb_tests++;
         tests[$1]++;
@@ -28,7 +30,9 @@ END {
                 measurements = "[" measurements "]"
             --nb_metrics
             comma = nb_metrics > 0 ? "," : ""
-            print "      { \"name\": \"" metric "\", \"value\": " measurements " }" comma
+            print "      { \"name\": \"" metric "\", "
+            print "        \"value\": " measurements ", "
+            print "        \"units\": \"" units[key] "\" }" comma
         }
         --nb_tests
         comma = nb_tests > 0 ? "," : ""

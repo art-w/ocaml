@@ -11,5 +11,5 @@ file="${ctx}${test_file}"
 ( test -f "${compiler_output}"  && cat "${compiler_output}" ;
   test -f "${compiler_output2}" && cat "${compiler_output2}"
 ) | sed -n "/^ *0*\([0-9]\+.[0-9]\+\)s ${pattern}$/{s//\1/p;q}" \
-  | ( read elapsed ; echo "${dir}\t${file}\t${elapsed}" ) \
+  | ( read elapsed ; echo "${dir}\t${file}\t${elapsed}\tsecs" ) \
   >> "${BENCHMARK_FILE}"

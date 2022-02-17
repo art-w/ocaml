@@ -10,7 +10,7 @@ binaries() {
     | grep 'binary$' \
     | cut -f1 -d: \
     | xargs -n1 du -s \
-    | awk "1{s+=\$1} END{print \"binaries\\t$project\\t\" s}" \
+    | awk "1{s+=\$1} END{print \"binaries\\t$project\\t\" s \"\tkb\"}" \
   >> "$BENCHMARK_FILE"
 }
 
@@ -19,7 +19,7 @@ timings () {
   grep '^[0-9]\+\.[0-9]\+s ' build.log \
     | grep -v 'other$' \
     | sed 's/^\([0-9]\+.[0-9]\+\)s .*$$/\1/g' \
-    | awk "1{s+=\$1} END{print \"projects\\t$project\\t\" s}" \
+    | awk "1{s+=\$1} END{print \"projects\\t$project\\t\" s \"\tsecs\"}" \
     >> "$BENCHMARK_FILE"
   binaries "$project"
 }
