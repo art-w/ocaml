@@ -16,10 +16,10 @@ binaries() {
 
 timings () {
   project=$1
-  grep '^[0-9]\+\.[0-9]\+s ' build.log \
+  grep '^\s\s[0-9]\+\.[0-9]\+s ' build.log \
     | grep -v 'other$' \
-    | sed 's/^\([0-9]\+.[0-9]\+\)s .*$$/\1/g' \
-    | awk "1{s+=\$1} END{print \"projects\\t$project\\t\" s \"\tsecs\"}" \
+    | sed 's/^\s\s\([0-9]\+.[0-9]\+\)s .*$$/\1/g' \
+    | awk "{sum[\$2] += \$1} END{for (i in sum) print \"projects\\t$project/\" i \"\\t\" sum[i] \"\tsecs\"}" \
     >> "$BENCHMARK_FILE"
   binaries "$project"
 }
