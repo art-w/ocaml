@@ -4,7 +4,7 @@ export BENCHMARK_FILE="$1"
 
 binaries() {
   project=$1
-  find -type f \
+  find . -type f \
     | grep -ve '\.git' -ve '_opam' \
     | xargs -n1 file -i \
     | grep 'binary$' \
