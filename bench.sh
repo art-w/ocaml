@@ -46,7 +46,7 @@ bootstrap () {
   for i in $(seq 1 "$NB_RUNS"); do
     rm -f build.log
     make clean
-	  OCAMLPARAM=",_,timings=1" make world.opt | tee -a build.log | sed 's/^{/ {/'
+          OCAMLPARAM=",_,timings=1" make world.opt | tee -a build.log | sed 's/^{/ {/'
     timings 'ocaml'
   done
 }
@@ -183,26 +183,26 @@ opam_build menhir '--only-packages=menhir'
 # opam install --debug -y conf-gmp
 # echo 'opam install ocamlfind'
 # opam install --debug -y ocamlfind
-# 
+#
 # echo
 # echo
-# 
+#
 # opam show ocaml
-# 
+#
 # echo
 # echo
-# 
+#
 # echo 'opam config set version'
 # opam config set sys-ocaml-version 4.14.0
 # echo 'opam config set-global version'
 # opam config set-global sys-ocaml-version 4.14.0
-# 
+#
 # opam show ocaml
-# 
+#
 # echo
 # echo
-# 
-# 
+#
+#
 # opam pin --debug -ny .
 # echo 'pin zarith okay!'
 # echo
@@ -239,7 +239,7 @@ opam_build menhir '--only-packages=menhir'
 ### echo
 ### echo '--- LWT WILL BE INSTALLED ---'
 ### echo
-### 
+###
 ### cd lwt
 ### opam install -y result ppxlib react luv
 ### opam pin -n .
@@ -250,7 +250,7 @@ opam_build menhir '--only-packages=menhir'
 ### cd lwt
 ### opam install --assume-built --debug -y .
 ### cd ..
-### 
+###
 ### echo
 ### echo '--- LWT INSTALLED ---'
 ### echo
