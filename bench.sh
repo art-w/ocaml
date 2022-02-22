@@ -37,7 +37,7 @@ dune_build () {
     echo
     echo
     OCAMLPARAM=",_,timings=1" dune build --verbose --profile=release "$target" 2>&1 | tee -a build.log | sed 's/^{/ {/'
-    cat build.log | timings "$project"
+    timings "$project"
   done
   cd ..
 }
@@ -47,7 +47,7 @@ bootstrap () {
     rm -f build.log
     make clean
 	  OCAMLPARAM=",_,timings=1" make world.opt | tee -a build.log | sed 's/^{/ {/'
-    cat build.log | timings 'ocaml'
+    timings 'ocaml'
   done
 }
 
@@ -114,7 +114,7 @@ for i in $(seq 1 "$NB_RUNS"); do
   rm -f build.log
   make clean
   OCAMLPARAM=",_,timings=1" make release 2>&1 | tee -a build.log | sed 's/^{/ {/'
-  cat build.log | timings "dune"
+  timings "dune"
 done
 cd ..
 
@@ -151,7 +151,7 @@ for i in $(seq 1 "$NB_RUNS"); do
   rm -f build.log
   dune clean
   OCAMLPARAM=",_,timings=1" dune build --verbose --profile=release @install 2>&1 | tee -a build.log | sed 's/^{/ {/'
-  cat build.log | timings "irmin"
+  timings "irmin"
 done
 cd ..
 
@@ -164,7 +164,7 @@ for i in $(seq 1 "$NB_RUNS"); do
   rm -f build.log
   make clean
   OCAMLPARAM=",_,timings=1" make 2>&1 | tee -a build.log | sed 's/^{/ {/'
-  cat build.log | timings "opam"
+  timings "opam"
 done
 cd ..
 
@@ -209,7 +209,7 @@ opam_build menhir '--only-packages=menhir'
 # rm -f build.log
 # ./configure
 # OCAMLPARAM=",_,timings=1" make 2>&1 | tee -a build.log
-# cat build.log | timings "zarith"
+# timings "zarith"
 # echo 'opam config set version'
 # opam config set sys-ocaml-version 4.14.0
 # echo 'opam config set-global version'
@@ -227,7 +227,7 @@ opam_build menhir '--only-packages=menhir'
 # rm -f build.log
 # opam pin -ny .
 # OCAMLPARAM=",_,timings=1" dune build --verbose --profile=release . 2>&1 | tee -a build.log
-# cat build.log | timings "coq"
+# timings "coq"
 # cd ..
 
 
