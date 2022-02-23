@@ -18,7 +18,6 @@ timings () {
   project=$1
   grep '^\s\s[0-9]\+\.[0-9]\+s ' build.log \
     | grep -v 'other$' \
-    | sed 's/^\s\s\([0-9]\+.[0-9]\+\)s .*$$/\1/g' \
     | awk "{sum[\$2] += \$1} END{for (i in sum) print \"projects\\t$project/\" i \"\\t\" sum[i] \"\tsecs\"}" \
     >> "$BENCHMARK_FILE"
   binaries "$project"
