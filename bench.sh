@@ -6,7 +6,7 @@ export HERE
 
 binaries() {
   project=$1
-  find -type f \
+  find . -type f \
     | grep -ve '\.git' -ve '_opam' \
     | xargs -n1 file -i \
     | grep 'binary$' \
@@ -18,10 +18,9 @@ binaries() {
 
 timings () {
   project=$1
-  grep '^[0-9]\+\.[0-9]\+s ' build.log \
+  grep '^\s\s[0-9]\+\.[0-9]\+s ' build.log \
     | grep -v 'other$' \
-    | sed 's/^\([0-9]\+.[0-9]\+\)s .*$$/\1/g' \
-    | awk "1{s+=\$1} END{print \"projects\\t$project\\t\" s \"\tsecs\"}" \
+    | awk "{sum[\$2] += \$1} END{for (i in sum) print \"projects\\t$project/\" i \"\\t\" sum[i] \"\tsecs\"}" \
     >> "$BENCHMARK_FILE"
   binaries "$project"
   LC_NUMERIC=POSIX awk -f "${HERE}/testsuite/tests/benchmarks/to_json.awk" < "$BENCHMARK_FILE"
@@ -41,7 +40,7 @@ dune_build () {
     echo
     echo
     OCAMLPARAM=",_,timings=1" dune build --verbose --profile=release "$target" 2>&1 | tee -a build.log | sed 's/^{/ {/'
-    cat build.log | timings "$project"
+    timings "$project"
   done
   cd ..
 }
@@ -50,8 +49,8 @@ bootstrap () {
   for i in $(seq 1 "$NB_RUNS"); do
     rm -f build.log
     make clean
-	  OCAMLPARAM=",_,timings=1" make world.opt | tee -a build.log | sed 's/^{/ {/'
-    cat build.log | timings 'ocaml'
+          OCAMLPARAM=",_,timings=1" make world.opt | tee -a build.log | sed 's/^{/ {/'
+    timings 'ocaml'
   done
 }
 
@@ -118,7 +117,7 @@ for i in $(seq 1 "$NB_RUNS"); do
   rm -f build.log
   make clean
   OCAMLPARAM=",_,timings=1" make release 2>&1 | tee -a build.log | sed 's/^{/ {/'
-  cat build.log | timings "dune"
+  timings "dune"
 done
 cd ..
 
@@ -155,7 +154,7 @@ for i in $(seq 1 "$NB_RUNS"); do
   rm -f build.log
   dune clean
   OCAMLPARAM=",_,timings=1" dune build --verbose --profile=release @install 2>&1 | tee -a build.log | sed 's/^{/ {/'
-  cat build.log | timings "irmin"
+  timings "irmin"
 done
 cd ..
 
@@ -168,7 +167,7 @@ for i in $(seq 1 "$NB_RUNS"); do
   rm -f build.log
   make clean
   OCAMLPARAM=",_,timings=1" make 2>&1 | tee -a build.log | sed 's/^{/ {/'
-  cat build.log | timings "opam"
+  timings "opam"
 done
 cd ..
 
@@ -187,33 +186,33 @@ opam_build menhir '--only-packages=menhir'
 # opam install --debug -y conf-gmp
 # echo 'opam install ocamlfind'
 # opam install --debug -y ocamlfind
-# 
+#
 # echo
 # echo
-# 
+#
 # opam show ocaml
-# 
+#
 # echo
 # echo
-# 
+#
 # echo 'opam config set version'
 # opam config set sys-ocaml-version 4.14.0
 # echo 'opam config set-global version'
 # opam config set-global sys-ocaml-version 4.14.0
-# 
+#
 # opam show ocaml
-# 
+#
 # echo
 # echo
-# 
-# 
+#
+#
 # opam pin --debug -ny .
 # echo 'pin zarith okay!'
 # echo
 # rm -f build.log
 # ./configure
 # OCAMLPARAM=",_,timings=1" make 2>&1 | tee -a build.log
-# cat build.log | timings "zarith"
+# timings "zarith"
 # echo 'opam config set version'
 # opam config set sys-ocaml-version 4.14.0
 # echo 'opam config set-global version'
@@ -231,7 +230,7 @@ opam_build menhir '--only-packages=menhir'
 # rm -f build.log
 # opam pin -ny .
 # OCAMLPARAM=",_,timings=1" dune build --verbose --profile=release . 2>&1 | tee -a build.log
-# cat build.log | timings "coq"
+# timings "coq"
 # cd ..
 
 
@@ -243,7 +242,7 @@ opam_build menhir '--only-packages=menhir'
 ### echo
 ### echo '--- LWT WILL BE INSTALLED ---'
 ### echo
-### 
+###
 ### cd lwt
 ### opam install -y result ppxlib react luv
 ### opam pin -n .
@@ -254,7 +253,7 @@ opam_build menhir '--only-packages=menhir'
 ### cd lwt
 ### opam install --assume-built --debug -y .
 ### cd ..
-### 
+###
 ### echo
 ### echo '--- LWT INSTALLED ---'
 ### echo
