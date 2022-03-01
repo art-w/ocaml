@@ -269,10 +269,14 @@ one: lib tools
 .PHONY: benchmarks
 benchmarks: lib tools
 	@-for i in $(shell seq 1 5); do \
-	    $(MAKE) all-benchmarks 1>&2 ; \
+	    for dir in tests/benchmarks/*; do \
+	      if [ -d $$dir ]; then \
+		$(MAKE) exec-one DIR=$$dir; \
+		LC_NUMERIC=POSIX $(AWK) -f ./tests/benchmarks/to_json.awk < "$(BENCHMARK_FILE)"; \
+		rm '$(BENCHMARK_FILE)'; \
+	      fi; \
+	    done; \
 	  done
-	@-LC_NUMERIC=POSIX $(AWK) -f ./tests/benchmarks/to_json.awk < "$(BENCHMARK_FILE)"
-	@rm '$(BENCHMARK_FILE)'
 
 .PHONY: exec-one
 exec-one:
