@@ -1,6 +1,8 @@
 #!/bin/sh
 export NB_RUNS=2
 export BENCHMARK_FILE="$1"
+HERE=$(realpath "$(dirname "$0")")
+export HERE
 
 binaries() {
   project=$1
@@ -22,6 +24,8 @@ timings () {
     | awk "1{s+=\$1} END{print \"projects\\t$project\\t\" s \"\tsecs\"}" \
     >> "$BENCHMARK_FILE"
   binaries "$project"
+  LC_NUMERIC=POSIX awk -f "${HERE}/testsuite/tests/benchmarks/to_json.awk" < "$BENCHMARK_FILE"
+  rm "$BENCHMARK_FILE"
 }
 
 dune_build () {
