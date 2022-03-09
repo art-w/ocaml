@@ -144,19 +144,10 @@ eval $(opam env)
 
 opam_build ocamlgraph
 
-
-
 cd irmin
 git checkout 2.9.0
-opam install -y --deps-only .
-for i in $(seq 1 "$NB_RUNS"); do
-  rm -f build.log
-  dune clean
-  OCAMLPARAM=",_,timings=1" dune build --verbose --profile=release @install 2>&1 | tee -a build.log | sed 's/^{/ {/'
-  timings "irmin"
-done
 cd ..
-
+opam_build irmin
 
 cd opam
 opam install crowbar
