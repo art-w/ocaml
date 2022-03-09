@@ -48,11 +48,21 @@ dune_build () {
   cd ..
 }
 
+opam_build() {
+  project=$1
+  target=${2:-.}
+  cd "$project"
+  opam pin -ny .
+  opam install -y -t --deps-only .
+  cd ..
+  dune_build "$project" "$target"
+}
+
 bootstrap () {
   for i in $(seq 1 "$NB_RUNS"); do
     rm -f build.log
     make clean
-          OCAMLPARAM=",_,timings=1" make world.opt | tee -a build.log | sed 's/^{/ {/'
+    OCAMLPARAM=",_,timings=1" make world.opt | tee -a build.log | sed 's/^{/ {/'
     timings 'ocaml'
   done
 }
@@ -132,17 +142,6 @@ opam install -y sexplib
 eval $(opam env)
 opam install -y git-unix git-paf
 eval $(opam env)
-
-
-opam_build() {
-  project=$1
-  target=${2:-.}
-  cd "$project"
-  opam pin -ny .
-  opam install -y -t --deps-only .
-  cd ..
-  dune_build "$project" "$target"
-}
 
 
 opam_build ocamlgraph
