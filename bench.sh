@@ -7,12 +7,15 @@ export HERE
 binaries() {
   project=$1
   find . -type f \
-    | grep -ve '\.git' -ve '_opam' \
+    | grep -ve '\.git' -ve '_opam' -ve '.aliases' -ve '.merlin' \
     | xargs -n1 file -i \
     | grep 'binary$' \
     | cut -f1 -d: \
     | xargs -n1 du -s \
-    | awk "1{s+=\$1} END{print \"binaries\\t$project\\t\" s \"\tkb\"}" \
+    | sed -E 's;\..*/(.*);\1;g' \
+    | grep -ve '\s\..*' \
+    | sed -E 's;([0-9]+).*\.(.*);\1\t\2;g' \
+    | awk "{sum[\$2] += \$1} END{for (i in sum) print \"binaries\\t$project/\" i \"\\t\" sum[i] \"\tkb\"}" \
   >> "$BENCHMARK_FILE"
 }
 
