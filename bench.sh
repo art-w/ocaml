@@ -154,7 +154,7 @@ eval $(opam env)
 
 opam_build ocamlgraph bd6c8ce2e64dee10e800aeda648684409cfa0bff
 
-opam_build irmin "2.9.0"
+opam_build irmin "3.0.0"
 
 cd opam
 opam install crowbar
