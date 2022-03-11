@@ -48,3 +48,5 @@ RUN git clone 'https://github.com/backtracking/ocamlgraph.git'
 COPY --chown=opam:opam . ocaml
 
 WORKDIR ocaml
+
+RUN ./configure
