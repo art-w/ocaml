@@ -63,11 +63,10 @@ opam switch create . --empty
 opam pin -ny .
 
 ./configure --prefix=$(opam var prefix)
-make world.opt | sed 's/^{/ {/'
 echo
 echo '--- OCAML WILL BE INSTALLED ---'
 echo
-opam install --assume-built --debug -y .
+opam install --debug -y .
 
 echo
 echo '--- OCAML DEPENDENCIES WILL BE INSTALLED ---'
