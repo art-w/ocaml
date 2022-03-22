@@ -32,8 +32,12 @@ timings () {
 
 dune_build () {
   project=$1
-  target=${2:-.}
+  version=$2
+  target=${3:-.}
   cd "$project"
+  if [ ! -z $version ]; then
+      git checkout $version
+  fi
   for i in $(seq 1 "$NB_RUNS"); do
     rm -f build.log
     dune clean
@@ -48,11 +52,25 @@ dune_build () {
   cd ..
 }
 
+opam_build() {
+  project=$1
+  version=$2
+  target=${3:-.}
+  cd "$project"
+  if [ ! -z $version ]; then
+      git checkout $version
+  fi
+  opam pin -ny .
+  opam install -y -t --deps-only .
+  cd ..
+  dune_build "$project" "$version" "$target"
+}
+
 bootstrap () {
   for i in $(seq 1 "$NB_RUNS"); do
     rm -f build.log
     make clean
-          OCAMLPARAM=",_,timings=1" make world.opt | tee -a build.log | sed 's/^{/ {/'
+    OCAMLPARAM=",_,timings=1" make world.opt | tee -a build.log | sed 's/^{/ {/'
     timings 'ocaml'
   done
 }
@@ -135,32 +153,9 @@ opam install -y git-unix git-paf
 eval $(opam env)
 
 
-opam_build() {
-  project=$1
-  target=${2:-.}
-  cd "$project"
-  opam pin -ny .
-  opam install -y -t --deps-only .
-  cd ..
-  dune_build "$project" "$target"
-}
+opam_build ocamlgraph bd6c8ce2e64dee10e800aeda648684409cfa0bff
 
-
-opam_build ocamlgraph
-
-
-
-cd irmin
-git checkout 2.9.0
-opam install -y --deps-only .
-for i in $(seq 1 "$NB_RUNS"); do
-  rm -f build.log
-  dune clean
-  OCAMLPARAM=",_,timings=1" dune build --verbose --profile=release @install 2>&1 | tee -a build.log | sed 's/^{/ {/'
-  timings "irmin"
-done
-cd ..
-
+opam_build irmin "3.0.0"
 
 cd opam
 opam install crowbar
@@ -174,13 +169,13 @@ for i in $(seq 1 "$NB_RUNS"); do
 done
 cd ..
 
-dune_build deque
+dune_build deque 20d3cfafa93b73c9f7ee20c230dc3e1b3f86956e
 
-opam_build ocaml-containers
+opam_build ocaml-containers 40189757cae1de9e43bf9c7ac92d7412868b2846
 
-opam_build decompress
+opam_build decompress 1871eea4d5a1e72116b4202c05a07bfb57965ad9
 
-opam_build menhir '--only-packages=menhir'
+opam_build menhir 7fdc5a97d2baa8ced49e07879e1841f1b13b4132 '--only-packages=menhir'
 
 # dune_build mirage
 
