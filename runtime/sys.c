@@ -159,6 +159,7 @@ CAMLexport void caml_do_exit(int retcode)
 #ifdef _WIN32
   caml_restore_win32_terminal();
 #endif
+  caml_terminate_signals();
 #ifdef NAKED_POINTERS_CHECKER
   if (retcode == 0 && caml_naked_pointers_detected) {
     fprintf (stderr, "\nOut-of-heap pointers were detected by the runtime.\n"
@@ -289,7 +290,7 @@ CAMLprim value caml_sys_remove(value name)
   caml_sys_check_path(name);
   p = caml_stat_strdup_to_os(String_val(name));
   caml_enter_blocking_section();
-  ret = unlink_os(p);
+  ret = caml_unlink(p);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret != 0) caml_sys_error(name);

@@ -30,12 +30,6 @@ AC_MSG_NOTICE([Configuring OCaml version AC_PACKAGE_VERSION])
 ## Command-line arguments passed to configure
 CONFIGURE_ARGS="$*"
 
-# Command-line tools section of the Unix manual
-programs_man_section=1
-
-# Library section of the Unix manual
-libraries_man_section=3
-
 # Command to build executalbes
 # In general this command is supposed to use the CFLAGs- and LDFLAGS-
 # related variables (OC_CFLAGS and OC_LDFLAGS for ocaml-specific
@@ -107,8 +101,6 @@ AC_SUBST([outputexe])
 AC_SUBST([outputobj])
 AC_SUBST([syslib])
 AC_SUBST([extralibs])
-AC_SUBST([programs_man_section])
-AC_SUBST([libraries_man_section])
 AC_SUBST([fpic])
 AC_SUBST([mkexe])
 AC_SUBST([mkexedebugflag])
@@ -158,6 +150,7 @@ AC_SUBST([mkmaindll])
 AC_SUBST([mksharedlibrpath])
 AC_SUBST([install_bytecode_programs])
 AC_SUBST([install_source_artifacts])
+AC_SUBST([install_ocamlnat])
 AC_SUBST([profinfo])
 AC_SUBST([profinfo_width])
 AC_SUBST([frame_pointers])
@@ -298,6 +291,10 @@ AC_ARG_WITH([odoc],
 AC_ARG_ENABLE([ocamltest],
   [AS_HELP_STRING([--disable-ocamltest],
     [do not build the ocamltest driver])])
+
+AC_ARG_ENABLE([native-toplevel],
+  [AS_HELP_STRING([--enable-native-toplevel],
+    [build the native toplevel])])
 
 AC_ARG_ENABLE([frame-pointers],
   [AS_HELP_STRING([--enable-frame-pointers],
@@ -679,6 +676,9 @@ AS_CASE([$host],
       [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
       internal_cppflags='-DUNICODE -D_UNICODE'
+      OCAML_CL_HAS_VOLATILE_METADATA
+      AS_IF([test "x$cl_has_volatile_metadata" = "xtrue"],
+            [internal_cflags='-d2VolatileMetadata-'])
       internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
     [xlc-*],
@@ -986,6 +986,10 @@ AS_IF([test x"$enable_shared" != "xno"],
        AS_CASE([$cc_basename,$host],
            [*gcc*,powerpc-*-linux*],
            [mksharedlib="$CC -shared -mbss-plt \$(LDFLAGS)"],
+           [[*,i[3456]86-*]],
+           # Disable DT_TEXTREL warnings on Linux and BSD i386
+           # See https://github.com/ocaml/ocaml/issues/9800
+           [mksharedlib="$CC -shared \$(LDFLAGS) -Wl,-z,notext"],
            [mksharedlib="$CC -shared \$(LDFLAGS)"])
       oc_ldflags="$oc_ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
@@ -1029,7 +1033,16 @@ AS_IF([test x"$supports_shared_libraries" = 'xtrue'],
     [earm*-*-netbsd*], [natdynlink=true],
     [aarch64-*-linux*], [natdynlink=true],
     [aarch64-*-freebsd*], [natdynlink=true],
+    [aarch64-*-openbsd*], [natdynlink=true],
     [riscv*-*-linux*], [natdynlink=true])])
+
+AS_CASE([$enable_native_toplevel,$natdynlink],
+  [yes,false],
+    [AC_MSG_ERROR(m4_normalize([
+      The native toplevel requires native dynlink support]))],
+  [yes,*],
+    [install_ocamlnat=true],
+    [install_ocamlnat=false])
 
 # Try to work around the Skylake/Kaby Lake processor bug.
 AS_CASE(["$cc_basename,$host"],
@@ -1133,6 +1146,8 @@ AS_CASE([$host],
     [arch=arm64; system=linux],
   [aarch64-*-freebsd*],
     [arch=arm64; system=freebsd],
+  [aarch64-*-openbsd*],
+    [arch=arm64; system=openbsd],
   [x86_64-*-cygwin*],
     [arch=amd64; system=cygwin],
   [riscv64-*-linux*],

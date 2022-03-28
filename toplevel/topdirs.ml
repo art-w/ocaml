@@ -247,7 +247,7 @@ let match_generic_printer_type desc path args printer_type =
   let ty_expected =
     List.fold_right
       (fun ty_arg ty -> Ctype.newty (Tarrow (Asttypes.Nolabel, ty_arg, ty,
-                                             Cunknown)))
+                                             commu_var ())))
       ty_args (Ctype.newconstr printer_type [ty_target]) in
   begin try
     Ctype.unify !toplevel_env
@@ -571,16 +571,30 @@ let () =
 let () =
   reg_show_prim "show_class"
     (fun env loc id lid ->
-       let _path, desc = Env.lookup_class ~loc lid env in
-       [ Sig_class (id, desc, Trec_not, Exported) ]
+       let path, desc_class = Env.lookup_class ~loc lid env in
+       let _path, desc_cltype = Env.lookup_cltype ~loc lid env in
+       let _path, typedcl = Env.lookup_type ~loc lid env in
+       let hash_typedcl = Env.find_hash_type path env in
+       [
+         Sig_class (id, desc_class, Trec_not, Exported);
+         Sig_class_type (id, desc_cltype, Trec_not, Exported);
+         Sig_type (id, typedcl, Trec_not, Exported);
+         Sig_type (id, hash_typedcl, Trec_not, Exported);
+       ]
     )
     "Print the signature of the corresponding class."
 
 let () =
   reg_show_prim "show_class_type"
     (fun env loc id lid ->
-       let _path, desc = Env.lookup_cltype ~loc lid env in
-       [ Sig_class_type (id, desc, Trec_not, Exported) ]
+       let path, desc = Env.lookup_cltype ~loc lid env in
+       let _path, typedcl = Env.lookup_type ~loc lid env in
+       let hash_typedcl = Env.find_hash_type path env in
+       [
+         Sig_class_type (id, desc, Trec_not, Exported);
+         Sig_type (id, typedcl, Trec_not, Exported);
+         Sig_type (id, hash_typedcl, Trec_not, Exported);
+       ]
     )
     "Print the signature of the corresponding class type."
 

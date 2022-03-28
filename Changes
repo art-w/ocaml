@@ -1,7 +1,11 @@
-Working version
+OCaml 4.14.0
 ----------------
 
 ### Language features:
+
+- #10462: Add attribute to produce a compiler error for polls.
+  (Sadiq Jaffer, review by Mark Shinwell, Stephen Dolan
+   and Guillaume Munch-Maccagnoni)
 
 - #10437: Allow explicit binders for type variables.
   (Stephen Dolan, review by Leo White)
@@ -9,6 +13,12 @@ Working version
 - #10441: Remove unnecessary parentheses surrounding immediate objects.
   Allow 'object ... end # f', 'f object ... end', etc.
   (Yan Dong, review by Nicolás Ojeda Bär, Florian Angeletti and Gabriel Scherer)
+
+- #181, #9760: opt-in tail-modulo-cons (TMC) transformation
+    let[@tail_mod_cons] rec map f li = ...
+  (Frédéric Bour, Gabriel Scherer, Basile Clément,
+   review by Basile Clément and Pierre Chambart,
+   tested by Konstantin Romanov)
 
 ### Runtime system:
 
@@ -23,11 +33,18 @@ Working version
 - #10549: Stack overflow detection and naked pointers checking for ARM64
   (Xavier Leroy, review by Stephen Dolan)
 
-* #10675: Emit deprecation warnings when old C runtime function names
+* #10675, #10937: Emit deprecation warnings when old C runtime function names
   are used.  This will break C stub code that uses these old names and
   treats warnings as errors.  The workaround is to use the new names.
   (Xavier Leroy and David Allsopp, review by Sébastien Hinderer and
    Damien Doligez)
+
+- #10698, #10726, #10891: Free the alternate signal stack when the main OCaml
+   code or an OCaml thread stops
+  (Xavier Leroy, review by David Allsopp and Damien Doligez)
+
+- #10730, 10731: Fix bug in `Obj.reachable_words` causing a slowdown when called
+  multiple time (Alain Frisch, report by ygrek, review by Xavier Leroy)
 
 ### Code generation and optimizations:
 
@@ -45,7 +62,24 @@ Working version
   are used for passing arguments that do not fit in registers.
   (Xavier Leroy, review by Vincent Laviron)
 
+- #10681: Enforce boolean conditions for the native backend
+  (Vincent Laviron, review by Gabriel Scherer)
+
+- #10719: Ensure that build_apply respects Lambda.max_arity
+  (Stephen Dolan, review by Xavier Leroy)
+
+- #10728: Ensure that functions are evaluated after their arguments
+  (Stephen Dolan, review by Mark Shinwell)
+
+- #10732: Ensure right-to-left evaluation of arguments in cmm_helpers
+  (Greta Yorsh, review by Xavier Leroy)
+
 ### Standard library:
+
+* #10710: Add UTF tools, codecs and validations to the Uchar, Bytes and
+  String modules.
+  (Daniel Bünzli, review by Florian Angeletti, Nicolás Ojeda Bär, Alain
+   Frisch and Gabriel Scherer)
 
 * #10622: Annotate `Uchar.t` with immediate attribute
   (Hongbo Zhang, reivew by Gabriel Scherer and Nicolás Ojeda Bär)
@@ -76,8 +110,14 @@ Working version
   (Nicolás Ojeda Bär, review by John Whitington, Daniel Bünzli, David Allsopp
   and Xavier Leroy)
 
-- #10596: Add with_open_bin, with_open_text and with_open_gen to In_channel and
-  Out_channel. Also, add In_channel.input_all.
+* #10583, #10998: Add over 40 new functions in Seq.
+  (François Pottier and Simon Cruanes, review by Nicolás Ojeda Bär,
+  Daniel Bünzli, Naëla Courant, Craig Ferguson, Wiktor Kuchta,
+  Xavier Leroy, Guillaume Munch-Maccagnoni, Raphaël Proust, Gabriel Scherer
+  and Thierry Martinez)
+
+- #10596, #10978: Add with_open_bin, with_open_text and with_open_gen to
+  In_channel and Out_channel. Also, add In_channel.input_all.
   (Nicolás Ojeda Bär, review by Daniel Bünzli, Jérémie Dimino, Damien Doligez
   and Xavier Leroy)
 
@@ -85,6 +125,19 @@ Working version
   to the Sys module of the standard library.
   (Sébastien Hinderer, review by Damien Doligez, Gabriel Scherer, David
   Allsopp, Nicolás Ojeda Bär, Vincent Laviron)
+
+- #10642: On Windows, Sys.remove and Unix.unlink now remove symlinks
+  to directories instead of raising EACCES. Introduce
+  caml/winsupport.h to hold more common code between the runtime,
+  lib-sys, and win32unix.
+  (Antonin Décimo, review by David Allsopp and Xavier Leroy)
+
+- #10737: add new ephemeron API for forward compatibility with Multicore
+  OCaml.
+  (Damien Doligez, review by Stephen Dolan)
+
+* #10922: Add deprecation warnings on {Int32,Int64,Nativeint}.format.
+  (Nicolás Ojeda Bär, review by Xavier Leroy and Florian Angeletti)
 
 ### Other libraries:
 
@@ -96,7 +149,19 @@ Working version
   Thread.default_uncaught_exception_handler.
   (Enguerrand Decorne, review by David Allsopp)
 
+- #10697: Bindings of dup and dup2 in win32unix now correctly call
+  WSADuplicateSocket on sockets instead of DuplicateHandle.
+  (Antonin Décimo, review by Xavier Leroy and Nicolás Ojeda Bär)
+
+- #10951: Introduce the Thread.Exit exception as an alternative way to
+  terminate threads prematurely.  This alternative way will become
+  the standard way in 5.00.
+  (Xavier Leroy, review by Florian Angeletti)
+
 ### Tools:
+
+- #10839: Fix regression of #show when printing class type
+  (Élie Brami, review by Florian Angeletti)
 
 - #3959, #7202, #10476: ocaml, in script mode, directive errors
   (`#use "missing_file";;`) use stderr and exit with an error.
@@ -116,6 +181,13 @@ Working version
 
 - #10565: Toplevel value printing: truncate strings only after 8 bytes.
   (Wiktor Kuchta, review by Xavier Leroy)
+
+- #10527: Show "#help;; for help" at toplevel startup
+  (Wiktor Kuchta, review by David Allsopp and Florian Angeletti)
+
+- #10846: add the `-shape` command-line option to ocamlobjinfo. When reading a
+  `cmt` file, shape information will only be shown if that option is used.
+  (Ulysse Gérard, review by Florian Angeletti)
 
 ### Debugging:
 
@@ -139,6 +211,16 @@ Working version
   (Dong An and Anukriti Kumar, review by David Allsopp, Gabriel Scherer
    and Damien Doligez)
 
+- #10281, #10685: Add description of C compiler on macOS and Windows platforms.
+  (Dong An, review by Xavier Leroy and David Allsopp)
+
+- #10397: Document exceptions raised by Unix module functions on Windows
+  (Martin Jambon, review by Daniel Bünzli, David Alsopp, Damien Doligez,
+   Xavier Leroy, and Florian Angeletti)
+
+- #10589: Fix many typos (excess/inconsistent spaces) in the HTML manual.
+  (Wiktor Kuchta, review by Florian Angeletti)
+
 - #10605: manual, name few css classes to ease styling and maintainability.
   (Florian Angeletti, review by Wiktor Kuchta and Gabriel Scherer)
 
@@ -148,9 +230,14 @@ Working version
   (Nicolás Ojeda Bär, report by Daniel Bünzli, review by David Allsopp,
   Sébastien Hinderer, and Daniel Bünzli)
 
+- #10671, #10672: webman: Fix misalignments in unordered lists by changing the
+  CSS for coloring bullets
+  (Wiktor Kuchta, review by Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
-- #10328: Give more precise error when disambiguation could not possibly work.
+- #10328, #10780: Give more precise error when disambiguation could not
+  possibly work.
   (Leo White, review by Gabriel Scherer and Florian Angeletti)
 
 - #10361: Improve error messages for mismatched record and variant
@@ -170,6 +257,15 @@ Working version
   (Armaël Guéneau, review by Gabriel Scherer,
    split off from #9118 by Kate Deplaix, report by Ricardo M. Correia)
 
+- #10488: Improve type variable name generation and recursive type detection
+  when printing type errors; this ensures that the names given to type variables
+  are always reused in the following portion of the trace and also removes
+  spurious `as 'a`s in types.
+  (Antal Spector-Zabusky, review by Florian Angeletti)
+
+- #10794: Clarify warning 57 (Ambiguous or-pattern variables under guard)
+  (Wiktor Kuchta, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #1599: add unset directive to ocamltest to clear environment variables before
@@ -178,6 +274,9 @@ Working version
 
 - #8516: Change representation of class signatures
   (Leo White, review by Thomas Refis)
+
+- #9444: -dtypedtree, print more explictly extra nodes in pattern ast.
+  (Frédéric Bour, review by Gabriel Scherer)
 
 - #10337: Normalize type_expr nodes on access
   One should now use accessors such as get_desc and get_level to access fields
@@ -192,6 +291,20 @@ Working version
   A normalized view row_desc_repr is provided for convenience.
   (Jacques Garrigue and Takafumi Saikawa,
    review by Leo White and Florian Angeletti)
+
+- #10541: Make field_kind and commutable abstract, enforcing correct access
+  (Jacques Garrigue and Takafumi Saikawa,
+   review by Thomas Refis and Florian Angeletti)
+
+- #10575: add a -dump-dir flag, which redirects all debugging printer
+   (`-dprofile`, `-dlambda`, ...) to the target directory
+  (Florian Angeletti, review by Thomas Refis and Gabriel Scherer)
+
+* #10627: Make row_field abstract
+  Completes #10474 by making row_field abstract too.
+  An immutable view row_field_view is provided, and one converts between it
+  and row_field via inj_row_field and row_field_repr.
+  (Jacques Garrigue and Takafumi Saikawa, review by Florian Angeletti)
 
 - #10433: Remove the distinction between 32-bit aligned and 64-bit aligned
   64-bit floats in Cmm.memory_chunk.
@@ -243,9 +356,58 @@ Working version
 - #10678: Expose descriptions in Warnings module
   (Leo White, review by Gabriel Scherer and Alain Frisch)
 
+- #10690: Always build ocamltoplevel.cmxa
+  (David Allsopp, review by Gabriel Scherer)
+
+- #10692: Expose Parse.module_type and Parse.module_expr
+  (Guillaume Petiot, review by Gabriel Scherer)
+
+- #10714: Add X86_proc.with_internal_assembler for temporarily changing the
+  assembler used by the backend.
+  (David Allsopp, review by Gabriel Scherer)
+
+- #10715: Allow the assembler and loader to be substituted in ocamlnat, for
+  example to be replaced with a binary emitter.
+  (David Allsopp and Nathan Rebours, review by Louis Gesbert,
+  Nicolás Ojeda Bär and Gabriel Scherer)
+
+- #10718, #11012: Add "Shape" information to the cmt files. Shapes are an
+  abstraction of modules that can be used by external tooling to perform
+  definition-aware operations.
+  (Ulysse Gérard, Thomas Refis and Leo White, review by Florian Angeletti)
+
+- #10742: strong call-by-need reduction for shapes
+  (Gabriel Scherer and Nathanaëlle Courant,
+   review by Florian Angeletti, Ulysse Gérard and Thomas Refis)
+
 ### Build system:
 
+- #10828 Build native-code compilers on OpenBSD/aarch64
+  (Christopher Zimmermann)
+
+- #10835 Disable DT_TEXTREL warnings on x86 32 bit architecture by passing
+  -Wl,-z,notext in mksharedlib and mkmaindll. Fixes relocation issues, reported
+  in #9800, making local patches in Debian, Alpine, and FreeBSD superfluous.
+  (Hannes Mehnert with Kate Deplaix and Stéphane Glondu, review by Xavier Leroy)
+
+- #10717: Simplify the installation of man pages
+  (Sébastien Hinderer, review by David Allsopp)
+
+- #10739: Stop installing extract_crc
+  (Sébastien Hinderer, review by David Allsopp, Daniel Bünzli, Xavier Leroy
+  and Gabriel Scherer)
+
+- #10797: Compile with -d2VolatileMetadata- on supporting versions of Visual
+  Studio. This suppresses the addition of .voltbl sections and eliminates
+  linking errors in systhreads.
+  (David Allsopp, review by Jonah Beckford and Sébastien Hinderer)
+
 ### Bug fixes:
+
+- #9214, #10709: Wrong unmarshaling of function pointers in debugger mode.
+  This was causing ocamldebug to crash when running some user-defined printers.
+  (Xavier Leroy, report by Rehan Malak, review by Gabriel Scherer and
+   Vincent Laviron)
 
 - #10473: Add CFI directives to RISC-V runtime and asmcomp.
   This allows stacktraces to work in gdb through C and OCaml calls.
@@ -274,6 +436,47 @@ Working version
   triplet-prefixed GCC) and fix all C compiler detection when CC is a path
   rather than a basename.
   (David Allsopp, report by Fabian @copy, review by Gabriel Scherer)
+
+- #10690: Add --enable-native-toplevel to configure to enable installing
+  ocamlnat as part of the main build (default is not to install it)
+  (David Allsopp, review by Gabriel Scherer)
+
+- #10693: Fix ident collision in includemod
+  (Leo White, review by Matthew Ryan)
+
+- #10702: Fix cast of more strictly aligned pointer in win32unix
+  implementation of stat
+  (Antonin Décimo, review by David Allsopp)
+
+- #10712: Type-check toplevel terms in the native toplevel in the same way as
+  the bytecode toplevel. In particular, this fixes the loss of type variable
+  names in the native toplevel.
+  (Leo White, review by David Allsopp and Gabriel Scherer)
+
+- #10735: Uncaught unify exception from `build_as_type`
+  (Jacques Garrigue, report and review by Leo White)
+
+- #10763, #10764: fix miscompilation of method delegation
+  (Alain Frisch, review by Vincent Laviron and Jacques Garrigue)
+
+- #10822, #10823: Bad interaction between ambivalent types and subtyping
+  coercions (Jacques Garrigue, report and review by Frédéric Bour)
+
+- #10836, #10952: avoid internal typechecker errors when checking signature
+  inclusion in presence of incompatible types.
+  (Florian Angeletti, report by Craig Ferguson, review by Gabriel Scherer)
+
+- #10849: Display the result of `let _ : <type> = <expr>` in the native
+  toplevel, as in the bytecode toplevel.
+  (David Allsopp, report by Nathan Rebours, review by Gabriel Scherer)
+
+- #10853: `Obj.reachable_words` could crash if called after a marshaling
+  operation in `NO_SHARING` mode.
+  (Xavier Leroy, report by Anil Madhavapeddy, review by Alain Frisch)
+
+- #10907, #10959: Wrong type inferred from existential types
+  (Jacques Garrigue and Gabriel Scherer, report by @dyzsr, review by Leo White)
+
 
 OCaml 4.13 maintenance branch
 -----------------------------
@@ -710,6 +913,13 @@ OCaml 4.13.0 (24 September 2021)
 
 - #10327: Add a subdirectories variable and a copy action to ocamltest
   (Sébastien Hinderer, review by David Allsopp)
+
+* #10337: Normalize type_expr nodes on access
+  One should now use accessors such as get_desc and get_level to access fields
+  of type_expr, rather than calling manually Btype.repr (which is now hidden
+  in Types.Transient_expr).
+  (Jacques Garrigue and Takafumi Saikawa,
+   review by Florian Angeletti and Gabriel Radanne)
 
 - #10358: Use a hash table for the load path.
   (Leo White, review by Gabriel Scherer)

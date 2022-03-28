@@ -256,7 +256,7 @@ endif
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
-	  $(OCAMLTEST_OPT)
+	  $(OCAMLTEST_OPT) ocamlnat
 ifeq "$(WITH_OCAMLDOC)-$(STDLIB_MANPAGES)" "ocamldoc-true"
 	$(MAKE) manpages
 endif
@@ -439,8 +439,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 endif
 	$(MAKE) -C tools install
 ifeq "$(UNIX_OR_WIN32)" "unix" # Install manual pages only on Unix
-	$(MKDIR) "$(INSTALL_MANDIR)/man$(PROGRAMS_MAN_SECTION)"
-	-$(MAKE) -C man install
+	$(MAKE) -C man install
 endif
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKE) -C otherlibs/$$i install || exit $$?; \
@@ -566,6 +565,8 @@ ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 endif
 	$(INSTALL_DATA) \
 	   utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
+	   toplevel/*.cmx toplevel/native/*.cmx \
+	   toplevel/native/tophooks.cmi \
 	   file_formats/*.cmx \
 	   lambda/*.cmx \
 	   driver/*.cmx asmcomp/*.cmx middle_end/*.cmx \
@@ -579,15 +580,11 @@ endif
 	$(INSTALL_DATA) \
 	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.$(O)) \
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
+	   $(TOPLEVELSTART:.cmo=.$(O)) \
 	   "$(INSTALL_COMPLIBDIR)"
-	if test -f ocamlnat$(EXE) ; then \
-	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"; \
-	  $(INSTALL_DATA) \
-	     toplevel/*.cmx \
-	     toplevel/native/*.cmx \
-	     $(TOPLEVELSTART:.cmo=.$(O)) \
-	     "$(INSTALL_COMPLIBDIR)"; \
-	fi
+ifeq "$(INSTALL_OCAMLNAT)" "true"
+	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"
+endif
 	cd "$(INSTALL_COMPLIBDIR)" && \
 	   $(RANLIB) ocamlcommon.$(A) ocamlbytecomp.$(A) ocamloptcomp.$(A)
 
@@ -618,6 +615,15 @@ tests:
 .PHONY: clean
 clean::
 	$(MAKE) -C testsuite clean
+
+# Run all benchmarks from scratch
+
+.PHONY: bench
+bench:
+	$(eval BENCHMARK_FILE=$(shell mktemp --tmpdir=testsuite/tests/benchmarks bench.XXX.tsv))
+	$(eval export BENCHMARK_FILE=$(shell realpath $(BENCHMARK_FILE)))
+	@$(shell ./bench.sh "$(BENCHMARK_FILE)" 1>&2)
+	@$(MAKE) -C testsuite --no-print-directory benchmarks
 
 # Build the manual latex files from the etex source files
 # (see manual/README.md)
@@ -947,7 +953,6 @@ partialclean::
 .PHONY: html_doc
 html_doc: ocamldoc
 	$(MAKE) -C api_docgen html
-	@echo "documentation is in ./api_docgen/html/"
 
 .PHONY: manpages
 manpages:
@@ -1074,13 +1079,16 @@ endif
 
 # The native toplevel
 
-ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
-    compilerlibs/ocamlbytecomp.cmxa \
-    otherlibs/dynlink/dynlink.cmxa \
-    compilerlibs/ocamltoplevel.cmxa \
-    $(TOPLEVELSTART:.cmo=.cmx)
-	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -I toplevel/native -o $@ $^
+ocamlnat_dependencies := \
+  compilerlibs/ocamlcommon.cmxa \
+  compilerlibs/ocamloptcomp.cmxa \
+  compilerlibs/ocamlbytecomp.cmxa \
+  otherlibs/dynlink/dynlink.cmxa \
+  compilerlibs/ocamltoplevel.cmxa \
+  $(TOPLEVELSTART:.cmo=.cmx)
 
+ocamlnat$(EXE): $(ocamlnat_dependencies)
+	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -I toplevel/native -o $@ $^
 
 toplevel/topdirs.cmx: toplevel/topdirs.ml
 	$(CAMLOPT_CMD) $(COMPFLAGS) $(OPTCOMPFLAGS) -I toplevel/native -c $<
@@ -1106,7 +1114,7 @@ bytecomp/opcodes.ml: runtime/caml/instruct.h $(make_opcodes)
 	$(NEW_OCAMLRUN) $(make_opcodes) -opcodes < $< > $@
 
 bytecomp/opcodes.mli: bytecomp/opcodes.ml
-	$(CAMLC) -i $< > $@
+	OCAMLPARAM=",_,timings=0" $(CAMLC) -i $< > $@
 
 $(make_opcodes): tools/make_opcodes.mll
 	$(MAKE) -C tools make_opcodes
